@@ -28,7 +28,7 @@ def cleanWordList(in_list):
         # 3. trenne auch am Bindestrich
         # verwendet die split-funktion eines strings; die liefert eine liste der teile
         for split_word in word.split("-"):
-            if isValidWord(word):
+            if isValidWord(split_word):
                 out_list.append(split_word)
 
     return out_list
