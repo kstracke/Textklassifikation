@@ -1,33 +1,19 @@
-import nltk
-import re
-import urllib.request
-from bs4  import  BeautifulSoup, SoupStrainer
+#!/usr/bin/env python3
 
-from nltk.corpus import treebank
+import pprint
 
-def is_visible(element):
-    element_text = str(element)
-    #print("element_start:", element_text, "element_ende")
-    if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
-        return False
-    elif re.match('\s+', element_text):
-        return False
-    elif re.match('\s*<!--.*-->\s*', element_text):
-        return False
-    return True
+import textimport
+import textverarbeitung
 
-with urllib.request.urlopen('http://www.aptgetupdate.de/2016/12/22/review-teufel-move-bt-%c2%b7-in-ear-bluetooth-kopfhoerer/') as response:
-    html = response.read()
-    soup = BeautifulSoup(html, 'html.parser', parse_only=SoupStrainer('article'))
+# schönere Ausgabe
+pp = pprint.PrettyPrinter(indent=3)
 
-    texts = soup.find_all(text=True)
+################################################################################
 
-    visible_texts = filter(is_visible, texts)
+# Länge=Wortanzahl ausgeben
 
-    all_the_text = "\n".join(visible_texts)
+RAW_TEXT = textimport.load_text_from_url("http://os.phil-opp.com/multiboot-kernel.html")
 
-    #print(all_the_text)
+print(len(RAW_TEXT))
 
-    for token in nltk.pos_tag(nltk.word_tokenize(all_the_text, language="german"), tagset="universal"):
-        print ("word: ", token)
-
+pp.pprint(textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT))
