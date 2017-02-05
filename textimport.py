@@ -46,6 +46,27 @@ def load_text_from_url(url):
 
     return remove_non_ascii_chars("\n".join(text_per_tag))
 
+def load_learning_data_from_file(fn):
+    urls_per_subject = {}
+    if not os.path.exists(fn):
+        return urls_per_subject
+
+    with open(fn) as file_handle:
+        for line in file_handle:
+            if "|" in line:
+                key, url = [ x.strip() for x in line.split("|")]
+
+                if url == "": continue
+
+                if key in urls_per_subject:
+                    urls_per_subject[key].append(url)
+                else:
+                    urls_per_subject[key] = [ url ]
+            else:
+                continue
+
+    return urls_per_subject
+
 # TODO: Think about getting those links from ATOM feeds OR reading the while blog from ATOM feeds
 # TODO: -->  https://pypi.python.org/pypi/feedparser
 ### d= feedparser.parse('URL')
