@@ -1,14 +1,18 @@
 # Alles rund ums Einlesen von Text aus verschiedenen Quellen
 
+#import feedparser
 import re
 import urllib.request
+import os
 
 from bs4 import BeautifulSoup, SoupStrainer
 
-################################################################################
-## Text-Gewinnung
-##
-################################################################################
+from breadability.readable import Article
+
+##########################################################################
+# Text-Gewinnung
+#
+##########################################################################
 
 # filtere den sichtbaren Text: nur bestimmte Elemente werden ausgelesen!
 def is_visible(element):
@@ -22,20 +26,26 @@ def is_visible(element):
         return False
     return True
 
+def remove_non_ascii_chars(string):
+    return string.encode("ascii", "ignore").decode("ascii")
 
 def load_text_from_url(url):
     req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
     con = urllib.request.urlopen(req)
     html = con.read()
 
-    soup = BeautifulSoup(html, 'html.parser', parse_only=SoupStrainer('article'))
+    # use breadability to extract the main html
+    filtered_html = Article(html, url=url).readable
+
+    # convert to text
+    soup = BeautifulSoup(filtered_html, 'html.parser')
 
     texts = soup.find_all(text=True)
 
-    visible_texts = filter(is_visible, texts)
+    text_per_tag = filter(is_visible, texts)
 
-    return "\n".join(visible_texts)
+    return remove_non_ascii_chars("\n".join(text_per_tag))
 
-
-### TODO: Think about getting those links from ATOM feeds OR reading the while blog from ATOM feeds
-### TODO: -->  https://pypi.python.org/pypi/feedparser
+# TODO: Think about getting those links from ATOM feeds OR reading the while blog from ATOM feeds
+# TODO: -->  https://pypi.python.org/pypi/feedparser
+### d= feedparser.parse('URL')
