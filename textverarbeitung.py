@@ -26,7 +26,7 @@ def cleanWordList(in_list):
             continue
 
         # 3. trenne auch am Bindestrich
-        # verwendet die split-funktion eines strings; die liefert eine liste der teile
+        # verwendet die split-funktion eines strings; die liefert eine Liste der Teile
         for split_word in word.split("-"):
             if isValidWord(split_word):
                 out_list.append(split_word)
@@ -48,7 +48,7 @@ def isValidWord(in_word):
     return True
 
 
-# Worten die Haeufigkeit des Vorkommens zuordnen
+# Worten die Häufigkeit des Vorkommens zuordnen
 def wordListToFreqDict(wordlist):
     # for token in nltk.pos_tag(nltk.word_tokenize(sorted_text, language="english"), tagset="universal"):
     #   pp.pprint("word: ", token)
@@ -56,7 +56,7 @@ def wordListToFreqDict(wordlist):
     return dict(zip(wordlist, wordfreq))
 
 
-# Worte nach Haeufigkeit des Vorkommens sortieren
+# Worte nach Häufigkeit des Vorkommens sortieren
 def sortFreqDict(freqdict):
     aux = [(freqdict[key], key) for key in freqdict]
     aux.sort()
@@ -64,6 +64,7 @@ def sortFreqDict(freqdict):
     return aux
 
 ################################################################################
+
 
 def getFilteredTokens(INPUT_TEXT):
     raw_tokens = nltk.word_tokenize(INPUT_TEXT, language="english")
@@ -82,12 +83,15 @@ def getFilteredTokens(INPUT_TEXT):
     #pp.pprint(sortedText)
 
 
-    # NLTK-Stoppwoerter lokal in Liste schreiben
+    # NLTK-Stoppwörter lokal in Liste schreiben
     stop_words = set(stopwords.words('english'))
     #pp.pprint(stopWords)
     # print("\n")
 
     return [w for w in sorted_text if w not in stop_words]
+
+
+#Wörterbuch mit Wortanzahl als key, Wörtern als value erstellen
 
 def makeWordFrequencyDictionary(INPUT_TEXT):
     # Text tokenisieren

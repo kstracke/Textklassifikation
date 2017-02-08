@@ -12,8 +12,20 @@ pp = pprint.PrettyPrinter(indent=3)
 
 # Länge=Wortanzahl ausgeben
 
-RAW_TEXT = textimport.load_text_from_url("http://os.phil-opp.com/multiboot-kernel.html")
+learning_data = textimport.load_learning_data_from_file("Feedliste.txt")
 
-print(len(RAW_TEXT))
+log = open("log.txt",mode="w")
 
-pp.pprint(textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT))
+
+for subject in learning_data:
+    for url in learning_data[subject]:
+        RAW_TEXT = textimport.load_text_from_url(url)
+
+        log.write("***\n")
+        log.write(url + "\n")
+        log.write(RAW_TEXT + "\n")
+
+        freq = textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT)
+        pprint.pprint(freq, log)
+        log.flush()
+        log.write("\n")
