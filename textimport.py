@@ -5,7 +5,7 @@ import re
 import urllib.request
 import os
 
-from bs4 import BeautifulSoup, SoupStrainer
+from bs4 import BeautifulSoup
 
 from breadability.readable import Article
 

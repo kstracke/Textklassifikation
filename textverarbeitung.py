@@ -42,7 +42,7 @@ def isValidWord(in_word):
         return False
     
     # Dezimalzahlen filtern (\d entspricht [0-9])
-    if re.match('\d+[\.,]?\d*$', in_word):
+    if re.match('\d+[.,]?\d*$', in_word):
         return False
 
     return True
