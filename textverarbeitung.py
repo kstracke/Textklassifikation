@@ -5,22 +5,22 @@ import nltk
 
 from nltk.corpus import stopwords
 
+# NLTK-Stoppwörter global in Set importieren
+STOP_WORDS = set(stopwords.words('english'))
 
-# nltk.download('book')
-# from nltk import word_tokenize,sent_tokenize
-# from nltk.corpus import treebank
-# from nltk.book import *
+from nltk.stem.snowball import SnowballStemmer
 
+STEMMER = SnowballStemmer("english", ignore_stopwords=True)
 
 ##################(##############################################################
 # Liste bereinigen
 def cleanWordList(in_list):
     out_list = []
 
+    # 1. text_lowercase
+    in_list = [x.lower() for x in in_list]
+
     for word in in_list:
-        # 1. text_lowercase = [x.lower() for x in text]
-        # resp: element = element.lower()
-                
         # 2. filtere nur a-z, A-Z,
         if not isValidWord(word):
             continue
@@ -29,7 +29,9 @@ def cleanWordList(in_list):
         # verwendet die split-funktion eines strings; die liefert eine Liste der Teile
         for split_word in word.split("-"):
             if isValidWord(split_word):
-                out_list.append(split_word)
+                #Stemiing = Worte werden auf den Wortstamm zurückgeführt
+                stem_word = STEMMER.stem(split_word)
+                out_list.append(stem_word)
 
     return out_list
 
@@ -83,12 +85,7 @@ def getFilteredTokens(INPUT_TEXT):
     #pp.pprint(sortedText)
 
 
-    # NLTK-Stoppwörter lokal in Liste schreiben
-    stop_words = set(stopwords.words('english'))
-    #pp.pprint(stopWords)
-    # print("\n")
-
-    return [w for w in sorted_text if w not in stop_words]
+    return [w for w in sorted_text if w not in STOP_WORDS]
 
 
 #Wörterbuch mit Wortanzahl als key, Wörtern als value erstellen
