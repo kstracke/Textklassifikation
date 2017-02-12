@@ -3,6 +3,8 @@
 import re
 import nltk
 
+from fractions import Fraction # rational numbers
+
 from nltk.corpus import stopwords
 
 # NLTK-Stoppwörter global in Set importieren
@@ -51,10 +53,10 @@ def isValidWord(in_word):
 
 
 # Worten die Häufigkeit des Vorkommens zuordnen
-def wordListToFreqDict(wordlist):
+def wordListToFreqDict(wordlist, scale=1):
     # for token in nltk.pos_tag(nltk.word_tokenize(sorted_text, language="english"), tagset="universal"):
     #   pp.pprint("word: ", token)
-    wordfreq = [wordlist.count(p) for p in wordlist]
+    wordfreq = [ Fraction(wordlist.count(p), scale) for p in wordlist]
     return dict(zip(wordlist, wordfreq))
 
 
@@ -69,7 +71,8 @@ def sortFreqDict(freqdict):
 
 
 def getFilteredTokens(INPUT_TEXT):
-    raw_tokens = nltk.word_tokenize(INPUT_TEXT, language="english")
+    raw_tokens = list(nltk.word_tokenize(INPUT_TEXT, language="english"))
+    number_of_tokens = len(raw_tokens)
 
     ## (POS-Tokenisierung
     #posTokenizedText = nltk.pos_tag(nltk.word_tokenizeRAW_TEXT, language="english"), tagset="universal")
@@ -85,17 +88,16 @@ def getFilteredTokens(INPUT_TEXT):
     #pp.pprint(sortedText)
 
 
-    return [w for w in sorted_text if w not in STOP_WORDS]
+    return ( [w for w in sorted_text if w not in STOP_WORDS], number_of_tokens )
 
 
 #Wörterbuch mit Wortanzahl als key, Wörtern als value erstellen
 
 def makeWordFrequencyDictionary(INPUT_TEXT):
     # Text tokenisieren
-    TOKENIZED_TEXT = getFilteredTokens(INPUT_TEXT)
+    (TOKENIZED_TEXT, INPUT_WORD_COUNT) = getFilteredTokens(INPUT_TEXT)
 
-    # Worten die Haeufigkeit ihres Vorkommens zuordnen
-    DICTIONARY = wordListToFreqDict(TOKENIZED_TEXT)
+    DICTIONARY = wordListToFreqDict(TOKENIZED_TEXT, INPUT_WORD_COUNT)
 
     # Worte nach Haeufigkeit des Vorkommens sortieren
     return sortFreqDict(DICTIONARY)
