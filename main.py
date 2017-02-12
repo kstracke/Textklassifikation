@@ -25,7 +25,11 @@ for subject in learning_data:
         log.write(url + "\n")
         log.write(RAW_TEXT + "\n")
 
-        freq = textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT)
-        pprint.pprint(freq, log)
+        if len(RAW_TEXT) > 0:
+            freq = textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT)
+            pprint.pprint(freq, log)
+        else:
+            log.write("ERROR: No text from this URL\n")
+
         log.flush()
         log.write("\n")
