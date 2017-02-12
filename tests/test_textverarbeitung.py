@@ -42,16 +42,16 @@ class TestIsValidWord(unittest.TestCase):
 class TestCleanWordList(unittest.TestCase):
 
     def test_invalid_words_are_removed(self):
-        INPUT_WORD_LIST = "My 32 pigs whistle.".split(" ")
-        EXPECTED_OUTPUT = "My pigs whistle.".split(" ")
+        INPUT_WORD_LIST = "My 32 pigs whistle".split(" ")
+        EXPECTED_OUTPUT = "my pig whistl".split(" ")
 
         self.assertEqual(cleanWordList(INPUT_WORD_LIST), 
             EXPECTED_OUTPUT
         )
 
     def test_if_words_are_split(self):
-        INPUT_WORD_LIST = "My 32 pigs-whistle 32-times.".split(" ")
-        EXPECTED_OUTPUT = "My pigs whistle times.".split(" ")        
+        INPUT_WORD_LIST = "My 32 pigs-whistle 32-times".split(" ")
+        EXPECTED_OUTPUT = "my pig whistl time".split(" ")
 
         self.assertEqual(
             cleanWordList(INPUT_WORD_LIST), 
