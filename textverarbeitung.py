@@ -63,7 +63,7 @@ def wordListToFreqDict(wordlist, scale=1):
 
 
 # Worte nach Häufigkeit des Vorkommens sortieren
-def sortFreqDict(freqdict):
+def buildSortedListFromDictionary(freqdict):
     aux = [(freqdict[key], key) for key in freqdict]
     aux.sort()
     aux.reverse()
@@ -101,8 +101,7 @@ def makeWordFrequencyDictionary(INPUT_TEXT):
 
     DICTIONARY = wordListToFreqDict(TOKENIZED_TEXT, INPUT_WORD_COUNT)
 
-    # Worte nach Haeufigkeit des Vorkommens sortieren
-    return sortFreqDict(DICTIONARY)
+    return DICTIONARY
 
 
 def appendWordFreqDictToExistingDict(existing, to_append):
