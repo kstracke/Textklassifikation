@@ -3,6 +3,8 @@
 import re
 import nltk
 
+from collections import defaultdict # sum of dicts
+
 from fractions import Fraction # rational numbers
 
 from nltk.corpus import stopwords
@@ -101,3 +103,10 @@ def makeWordFrequencyDictionary(INPUT_TEXT):
 
     # Worte nach Haeufigkeit des Vorkommens sortieren
     return sortFreqDict(DICTIONARY)
+
+
+def appendWordFreqDictToExistingDict(existing, to_append):
+    for key, value in to_append.items():
+        existing[key] = value + existing.get(key, Fraction(0,1))
+
+    return existing
