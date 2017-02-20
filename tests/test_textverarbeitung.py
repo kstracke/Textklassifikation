@@ -42,22 +42,42 @@ class TestIsValidWord(unittest.TestCase):
 class TestCleanWordList(unittest.TestCase):
 
     def test_invalid_words_are_removed(self):
-        INPUT_WORD_LIST = "My 32 pigs whistle.".split(" ")
-        EXPECTED_OUTPUT = "My pigs whistle.".split(" ")
+        INPUT_WORD_LIST = "My 32 pigs whistle".split(" ")
+        EXPECTED_OUTPUT = "my pig whistl".split(" ")
 
         self.assertEqual(cleanWordList(INPUT_WORD_LIST), 
             EXPECTED_OUTPUT
         )
 
     def test_if_words_are_split(self):
-        INPUT_WORD_LIST = "My 32 pigs-whistle 32-times.".split(" ")
-        EXPECTED_OUTPUT = "My pigs whistle times.".split(" ")        
+        INPUT_WORD_LIST = "My 32 pigs-whistle 32-times".split(" ")
+        EXPECTED_OUTPUT = "my pig whistl time".split(" ")
 
         self.assertEqual(
             cleanWordList(INPUT_WORD_LIST), 
             EXPECTED_OUTPUT
         )
 
+
+class TestMergeDictionary(unittest.TestCase):
+
+    def test_identity(self):
+        INPUT = { "hallo":1, "welt":1 }
+
+        self.assertEqual(appendWordFreqDictToExistingDict(INPUT, {}), INPUT)
+
+    def test_expand(self):
+        INPUT = { "hallo":1, "welt":1 }
+        OLD = {}
+
+        self.assertEqual(appendWordFreqDictToExistingDict(OLD, INPUT), INPUT)
+
+    def test_add_content(self):
+        INPUT = { "hallo":1, "welt":1 }
+        OLD = { "wie" : 2, "gehts": 1}
+        RESULT = { "hallo":1, "welt":1, "wie" : 2, "gehts": 1}
+
+        self.assertEqual(appendWordFreqDictToExistingDict(OLD, INPUT), RESULT)
 
 
 if __name__ == '__main__':
