@@ -7,6 +7,8 @@ import textimport
 import textverarbeitung
 import pickle
 
+import  logging as log
+
 # schönere Ausgabe
 pp = pprint.PrettyPrinter(indent=3)
 
@@ -15,29 +17,21 @@ pp = pprint.PrettyPrinter(indent=3)
 # Länge=Wortanzahl ausgeben
 
 def process_tagged_urls(learning_data):
-    log = open("log.txt",mode="w")
-
     per_subject_word_freq = {}
 
     for subject in learning_data:
         for url in learning_data[subject]:
+            log.info("Processing %s" % url)
             RAW_TEXT = textimport.load_text_from_url(url)
-
-            log.write("***\n")
-            log.write(url + "\n")
-            log.write(RAW_TEXT + "\n")
 
             if len(RAW_TEXT) > 0:
                 freq = textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT)
-                pprint.pprint(freq, log)
+                log.debug("Word list: %s" % pprint.pformat(freq))
 
                 per_subject_word_freq[subject] = textverarbeitung.appendWordFreqDictToExistingDict(
                     per_subject_word_freq.get(subject, dict()), freq)
             else:
-                log.write("ERROR: No text from this URL\n")
-
-            log.flush()
-            log.write("\n")
+                log.warning("ERROR: No text from %s" % url)
 
     return per_subject_word_freq
 
@@ -49,16 +43,18 @@ def write_learning_data_to_file(per_subject_word_freq, filename):
 
 # pprint.pprint(per_subject_word_freq, log)
 
+log.basicConfig(filename='log.txt', level=log.INFO)
+log.info('Started')
+
 learning_data = textimport.load_learning_data_from_file("Feedliste.txt")
 per_subject_word_freq = process_tagged_urls(learning_data)
 write_learning_data_to_file(per_subject_word_freq, "wordlists.obj")
 
 textimport.write_textcache()
 
-log.write("\n\nResult:\n")
 for subject, wordfreq_dist in per_subject_word_freq.items():
-    log.write("%s\n" % subject)
-
     sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
 
-    pprint.pprint(sorted_word_dist[:40], log)
+    log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
+
+log.info('Finished')
