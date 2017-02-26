@@ -53,6 +53,8 @@ learning_data = textimport.load_learning_data_from_file("Feedliste.txt")
 per_subject_word_freq = process_tagged_urls(learning_data)
 write_learning_data_to_file(per_subject_word_freq, "wordlists.obj")
 
+textimport.write_textcache()
+
 log.write("\n\nResult:\n")
 for subject, wordfreq_dist in per_subject_word_freq.items():
     log.write("%s\n" % subject)
