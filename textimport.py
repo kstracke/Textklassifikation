@@ -73,9 +73,9 @@ def load_learning_data_from_file(fn_list):
                     if url == "": continue
 
                     if key in urls_per_subject:
-                        urls_per_subject[key].append(url)
+                        urls_per_subject[key].add(url)
                     else:
-                        urls_per_subject[key] = [ url ]
+                        urls_per_subject[key] = {url}
                 else:
                     continue
 
