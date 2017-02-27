@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
+
 # Alles rund ums Einlesen von Text aus verschiedenen Quellen
 
 #import feedparser
