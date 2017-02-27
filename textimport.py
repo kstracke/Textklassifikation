@@ -51,24 +51,30 @@ def load_text_from_url(url):
 
     return TEXT_CACHE[url]
 
-def load_learning_data_from_file(fn):
+def load_learning_data_from_file(fn_list):
     urls_per_subject = {}
-    if not os.path.exists(fn):
-        return urls_per_subject
 
-    with open(fn) as file_handle:
-        for line in file_handle:
-            if "|" in line:
-                key, url = [ x.strip() for x in line.split("|")]
+    # turn a simple string into a list of string
+    if isinstance(fn_list, str):
+        fn_list = [ fn_list ]
 
-                if url == "": continue
+    for fn in fn_list:
+        if not os.path.exists(fn):
+            continue
 
-                if key in urls_per_subject:
-                    urls_per_subject[key].append(url)
+        with open(fn) as file_handle:
+            for line in file_handle:
+                if "|" in line:
+                    key, url = [ x.strip() for x in line.split("|")]
+
+                    if url == "": continue
+
+                    if key in urls_per_subject:
+                        urls_per_subject[key].append(url)
+                    else:
+                        urls_per_subject[key] = [ url ]
                 else:
-                    urls_per_subject[key] = [ url ]
-            else:
-                continue
+                    continue
 
     return urls_per_subject
 
