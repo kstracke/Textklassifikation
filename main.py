@@ -7,10 +7,25 @@ import textimport
 import textverarbeitung
 import pickle
 
-import  logging as log
+import logging as log
+import argparse
 
-# schönere Ausgabe
-pp = pprint.PrettyPrinter(indent=3)
+
+def process_arguments():
+    parser = argparse.ArgumentParser(description='Classification')
+    parser.add_argument('--verbose', '-v', action='store_true', help='verbose flag')
+    parser.add_argument('--debug', '-d', action='store_true', help='debug flag')
+    parser.add_argument('--logfile', help="Write to this file instead of console")
+    parser.add_argument('--action', required=True, choices=['learn', 'classify'])
+    parser.add_argument('--learning-data', '-l', help='Input resp. output of learning data')
+    parser.add_argument('data', nargs='+', help=
+    'Data to process. Depending on the action (see below). For learning mode, the program expects a path to a file '
+    'with tagged urls for learning. In the classification mode, you can either specify one or more URLs directly '
+    'or a file with one URL per line for classification.'
+                        )
+
+    return parser.parse_args()
+
 
 ################################################################################
 
@@ -33,28 +48,48 @@ def process_tagged_urls(learning_data):
             else:
                 log.warning("ERROR: No text from %s" % url)
 
+    textimport.write_textcache()
     return per_subject_word_freq
 
-def write_learning_data_to_file(per_subject_word_freq, filename):
-    # gebe alle Wortfreq-Wörterbücher in Datei aus
 
+def write_learning_data_to_file(per_subject_word_freq, filename):
     wordfreq_dict_file = open(filename, mode="wb")
     pickle.dump(per_subject_word_freq, wordfreq_dict_file)
 
-# pprint.pprint(per_subject_word_freq, log)
 
-log.basicConfig(filename='log.txt', level=log.INFO)
-log.info('Started')
+def setup_logging(args):
+    if args.verbose:
+        verbosity = log.INFO
+    else:
+        verbosity = log.WARNING
 
-learning_data = textimport.load_learning_data_from_file("Feedliste.txt")
-per_subject_word_freq = process_tagged_urls(learning_data)
-write_learning_data_to_file(per_subject_word_freq, "wordlists.obj")
+    if args.debug:
+        verbosity = log.DEBUG
 
-textimport.write_textcache()
+    if args.logfile:
+        log.basicConfig(filename=args.logfile, level=verbosity)
+    else:
+        log.basicConfig(level=verbosity)
 
-for subject, wordfreq_dist in per_subject_word_freq.items():
-    sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
 
-    log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
+def main():
+    args = process_arguments()
 
-log.info('Finished')
+    setup_logging(args)
+
+    if args.action == "learn":
+        wordlist_fn = args.learning_data if args.learning_data else "wordlists.obj"
+        learning_input = args.data[0]
+
+        learning_data = textimport.load_learning_data_from_file(learning_input)
+        per_subject_word_freq = process_tagged_urls(learning_data)
+        write_learning_data_to_file(per_subject_word_freq, wordlist_fn)
+
+        for subject, wordfreq_dist in per_subject_word_freq.items():
+            sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
+
+            log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
+
+
+if __name__ == '__main__':
+    main()
