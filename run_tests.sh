@@ -2,5 +2,5 @@
 
 for file in tests/test*.py
 do
-	python "$file"
+	python3 "$file"
 done
