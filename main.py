@@ -72,24 +72,31 @@ def setup_logging(args):
         log.basicConfig(level=verbosity)
 
 
+def do_learning(wordlist_fn, learning_data_files):
+    learning_data = textimport.load_learning_data_from_file( learning_data_files )
+    per_subject_word_freq = process_tagged_urls(learning_data)
+    write_learning_data_to_file(per_subject_word_freq, wordlist_fn)
+
+    for subject, wordfreq_dist in per_subject_word_freq.items():
+        sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
+
+        log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
+
+
+def do_classification(wordlist_fn, classification_data_paths):
+    log.error("Noch nicht implementiert")
+
+
 def main():
     args = process_arguments()
 
     setup_logging(args)
 
+    wordlist_fn = args.learning_data if args.learning_data else "wordlists.obj"
     if args.action == "learn":
-        wordlist_fn = args.learning_data if args.learning_data else "wordlists.obj"
-        learning_input = args.data[0]
-
-        learning_data = textimport.load_learning_data_from_file(learning_input)
-        per_subject_word_freq = process_tagged_urls(learning_data)
-        write_learning_data_to_file(per_subject_word_freq, wordlist_fn)
-
-        for subject, wordfreq_dist in per_subject_word_freq.items():
-            sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
-
-            log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
-
+        do_learning(wordlist_fn, args.data)
+    elif args.action == "classify":
+        do_classification(wordlist_fn, args.data)
 
 if __name__ == '__main__':
     main()
