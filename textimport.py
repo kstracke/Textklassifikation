@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
+
 # Alles rund ums Einlesen von Text aus verschiedenen Quellen
 
 #import feedparser
 import re
 import urllib.request
 import os
+import pickle
 
 from bs4 import BeautifulSoup
 
@@ -13,6 +17,7 @@ from breadability.readable import Article
 # Text-Gewinnung
 #
 ##########################################################################
+TEXT_CACHE = {}
 
 # filtere den sichtbaren Text: nur bestimmte Elemente werden ausgelesen!
 def is_visible(element):
@@ -30,43 +35,82 @@ def remove_non_ascii_chars(string):
     return string.encode("ascii", "ignore").decode("ascii")
 
 def load_text_from_url(url):
-    req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
-    con = urllib.request.urlopen(req)
-    html = con.read()
+    if not url in TEXT_CACHE:
+        req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
+        con = urllib.request.urlopen(req)
+        html = con.read()
 
-    # use breadability to extract the main html
-    filtered_html = Article(html, url=url).readable
+        # use breadability to extract the main html
+        filtered_html = Article(html, url=url).readable
 
-    # convert to text
-    soup = BeautifulSoup(filtered_html, 'html.parser')
+        # convert to text
+        soup = BeautifulSoup(filtered_html, 'html.parser')
 
-    texts = soup.find_all(text=True)
+        texts = soup.find_all(text=True)
 
-    text_per_tag = filter(is_visible, texts)
+        text_per_tag = filter(is_visible, texts)
 
-    return remove_non_ascii_chars("\n".join(text_per_tag))
+        TEXT_CACHE[url] = remove_non_ascii_chars("\n".join(text_per_tag))
 
-def load_learning_data_from_file(fn):
-    urls_per_subject = {}
+    return TEXT_CACHE[url]
+
+
+def load_text_from_file(fn):
     if not os.path.exists(fn):
-        return urls_per_subject
+        return ""
 
     with open(fn) as file_handle:
-        for line in file_handle:
-            if "|" in line:
-                key, url = [ x.strip() for x in line.split("|")]
+        return file_handle.read()
 
-                if url == "": continue
 
-                if key in urls_per_subject:
-                    urls_per_subject[key].append(url)
+def load_text(path):
+    if re.match("http[s]?://", path):
+        return load_text_from_url(path)
+    else:
+        return load_text_from_file(path)
+
+
+def load_learning_data_from_file(fn_list):
+    urls_per_subject = {}
+
+    # turn a simple string into a list of string
+    if isinstance(fn_list, str):
+        fn_list = [ fn_list ]
+
+    for fn in fn_list:
+        if not os.path.exists(fn):
+            continue
+
+        with open(fn) as file_handle:
+            for line in file_handle:
+                if "|" in line:
+                    key, url = [ x.strip() for x in line.split("|")]
+
+                    if url == "": continue
+
+                    if key in urls_per_subject:
+                        urls_per_subject[key].add(url)
+                    else:
+                        urls_per_subject[key] = {url}
                 else:
-                    urls_per_subject[key] = [ url ]
-            else:
-                continue
+                    continue
 
     return urls_per_subject
 
 # TODO: Think about getting those links from ATOM feeds OR reading the while blog from ATOM feeds
 # TODO: -->  https://pypi.python.org/pypi/feedparser
 ### d= feedparser.parse('URL')
+
+
+def read_textcache():
+    if os.path.isfile(".textcache"):
+        text_cache_file = open(".textcache", mode="rb")
+        return pickle.load(text_cache_file)
+    return {}
+
+def write_textcache():
+    text_cache_file = open(".textcache", mode="wb")
+    pickle.dump(TEXT_CACHE, text_cache_file)
+
+
+TEXT_CACHE = read_textcache()

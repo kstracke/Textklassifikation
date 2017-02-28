@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 
 import unittest
 import sys, os
@@ -25,8 +26,8 @@ class TestLoadLearningData(unittest.TestCase):
     def test_can_load_example_file(self):
         INPUT_FILE=os.path.join("tests", "data", "test_textimport.txt")
         CONTEXT={ 
-            "cooking" : ["http://chefkoch.de", "http://kochen.de"],
-            "cars" :   [ "http://auto-motor-sport.de"]
+            "cooking" : {"http://chefkoch.de", "http://kochen.de"},
+            "cars" :   {"http://auto-motor-sport.de"}
         }
         self.assertEqual(load_learning_data_from_file(INPUT_FILE), CONTEXT)
 
