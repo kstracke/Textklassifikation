@@ -19,10 +19,10 @@ def process_arguments():
     parser.add_argument('--action', required=True, choices=['learn', 'classify'])
     parser.add_argument('--learning-data', '-l', help='Input resp. output of learning data')
     parser.add_argument('data', nargs='+', help=
-    'Data to process. Depending on the action (see below). For learning mode, the program expects a path to a file '
-    'with tagged urls for learning. In the classification mode, you can either specify one or more URLs directly '
-    'or a file with one URL per line for classification.'
-                        )
+        'Data to process. Depending on the action (see below). For learning mode, the program expects a path to a file '
+        'with tagged urls for learning. In the classification mode, you can either specify one or more URLs directly '
+        'or a file with one URL per line for classification.'
+    )
 
     return parser.parse_args()
 
