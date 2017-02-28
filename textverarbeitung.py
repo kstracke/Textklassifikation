@@ -120,19 +120,19 @@ def appendWordFreqDictToExistingDict(existing, to_append):
 def compareTextToLearningData(text, per_subject_wordfreq_dict):
     FIRST_N_WORDS=40
     freq = makeWordFrequencyDictionary(text)
+    N_WORDS_TOT = len(freq.keys())
     log.debug("Words: %s" % pprint.pformat(freq))
 
     result = {}
 
     for category, wordfreq_dist in per_subject_wordfreq_dict.items():
-        learned_word_list = buildSortedListFromDictionary(wordfreq_dist)[:FIRST_N_WORDS]
+        learned_word_list = [ (float(x[0]), x[1]) for x in buildSortedListFromDictionary(wordfreq_dist)[:FIRST_N_WORDS]]
 
-        test_word_list = [((freq.get(x[1], 0) - float(x[0]))**2, x[1]) for x in learned_word_list]
+        test_word_list = [(freq.get(x[1], 0), x[0]) for x in learned_word_list]
         log.debug("How it compares to %s:\n%s" % (category, pprint.pformat(test_word_list)))
 
-        learned_word_list_norm = math.sqrt(sum([x[0] for x in learned_word_list]))
-        distance_to_learned_wordlist = math.sqrt(sum([x[0] for x in test_word_list]))
-        score = distance_to_learned_wordlist / learned_word_list_norm
+        sum_of_probabilities = sum([float(x[0]) for x in test_word_list])
+        score = N_WORDS_TOT * sum_of_probabilities / FIRST_N_WORDS
         result[category] = score
 
     return  result
