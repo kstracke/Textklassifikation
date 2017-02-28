@@ -21,7 +21,7 @@ def process_arguments():
     parser.add_argument('data', nargs='+', help=
         'Data to process. Depending on the action (see below). For learning mode, the program expects a path to a file '
         'with tagged urls for learning. In the classification mode, you can either specify one or more URLs directly '
-        'or a file with one URL per line for classification.'
+        'or a file containing text for classification.'
     )
 
     return parser.parse_args()
@@ -91,14 +91,16 @@ def do_learning(wordlist_fn, learning_data_files):
 def do_classification(wordlist_fn, classification_data_paths):
     per_subject_word_freq = load_learning_data_from_file(wordlist_fn)
 
+    results = {}
     for path in classification_data_paths:
         RAW_TEXT = textimport.load_text(path)
         if len(RAW_TEXT) > 0:
             per_subject_score = textverarbeitung.compareTextToLearningData(RAW_TEXT, per_subject_word_freq)
-            log.info("Per subject score for %s:\n%s" % (path, pprint.pformat(per_subject_score)))
+            results[path] = per_subject_score
         else:
             log.warn("Cannot read text from %s" % path)
 
+    pprint.pprint(results)
 
 def main():
     args = process_arguments()
