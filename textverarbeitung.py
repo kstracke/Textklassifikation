@@ -5,6 +5,9 @@
 
 import re
 import nltk
+import logging as log
+import pprint
+import math
 
 from collections import defaultdict # sum of dicts
 
@@ -112,3 +115,24 @@ def appendWordFreqDictToExistingDict(existing, to_append):
         existing[key] = value + existing.get(key, Fraction(0,1))
 
     return existing
+
+
+def compareTextToLearningData(text, per_subject_wordfreq_dict):
+    FIRST_N_WORDS=40
+    freq = makeWordFrequencyDictionary(text)
+    log.debug("Words: %s" % pprint.pformat(freq))
+
+    result = {}
+
+    for category, wordfreq_dist in per_subject_wordfreq_dict.items():
+        learned_word_list = buildSortedListFromDictionary(wordfreq_dist)[:FIRST_N_WORDS]
+
+        test_word_list = [((freq.get(x[1], 0) - float(x[0]))**2, x[1]) for x in learned_word_list]
+        log.debug("How it compares to %s:\n%s" % (category, pprint.pformat(test_word_list)))
+
+        learned_word_list_norm = math.sqrt(sum([x[0] for x in learned_word_list]))
+        distance_to_learned_wordlist = math.sqrt(sum([x[0] for x in test_word_list]))
+        score = distance_to_learned_wordlist / learned_word_list_norm
+        result[category] = score
+
+    return  result
