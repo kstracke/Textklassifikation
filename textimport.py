@@ -54,6 +54,15 @@ def load_text_from_url(url):
 
     return TEXT_CACHE[url]
 
+
+def load_text_from_file(fn):
+    if not os.path.exists(fn):
+        return ""
+
+    with open(fn) as file_handle:
+        return file_handle.read()
+
+
 def load_learning_data_from_file(fn_list):
     urls_per_subject = {}
 
