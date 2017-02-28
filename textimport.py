@@ -63,6 +63,13 @@ def load_text_from_file(fn):
         return file_handle.read()
 
 
+def load_text(path):
+    if re.match("http[s]?://", path):
+        return load_text_from_url(path)
+    else:
+        return load_text_from_file(path)
+
+
 def load_learning_data_from_file(fn_list):
     urls_per_subject = {}
 
