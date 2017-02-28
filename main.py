@@ -37,7 +37,7 @@ def process_tagged_urls(learning_data):
     for subject in learning_data:
         for url in learning_data[subject]:
             log.info("Processing %s" % url)
-            RAW_TEXT = textimport.load_text_from_url(url)
+            RAW_TEXT = textimport.load_text(url)
 
             if len(RAW_TEXT) > 0:
                 freq = textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT)
@@ -55,6 +55,11 @@ def process_tagged_urls(learning_data):
 def write_learning_data_to_file(per_subject_word_freq, filename):
     wordfreq_dict_file = open(filename, mode="wb")
     pickle.dump(per_subject_word_freq, wordfreq_dict_file)
+
+
+def load_learning_data_from_file(filename):
+    wordfreq_dict_file = open(filename, mode="rb")
+    return pickle.load(wordfreq_dict_file)
 
 
 def setup_logging(args):
@@ -84,7 +89,15 @@ def do_learning(wordlist_fn, learning_data_files):
 
 
 def do_classification(wordlist_fn, classification_data_paths):
-    log.error("Noch nicht implementiert")
+    per_subject_word_freq = load_learning_data_from_file(wordlist_fn)
+
+    for path in classification_data_paths:
+        RAW_TEXT = textimport.load_text(path)
+        if len(RAW_TEXT) > 0:
+            per_subject_score = textverarbeitung.compareTextToLearningData(RAW_TEXT, per_subject_word_freq)
+            log.info("Per subject score for %s:\n%s" % (path, pprint.pformat(per_subject_score)))
+        else:
+            log.warn("Cannot read text from %s" % path)
 
 
 def main():
