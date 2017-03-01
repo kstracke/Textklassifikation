@@ -70,7 +70,7 @@ def load_text(path):
         return load_text_from_file(path)
 
 
-def load_learning_data_from_file(fn_list):
+def get_urls_per_subject_from_file(fn_list):
     urls_per_subject = {}
 
     # turn a simple string into a list of string

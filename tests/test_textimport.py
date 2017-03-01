@@ -17,11 +17,11 @@ from textimport import *
 # Unittest fuer textimport.py
 ############################################################
 
-class TestLoadLearningData(unittest.TestCase):
+class TestGetUrlsPerSubjectFromFile(unittest.TestCase):
 
     def test_returns_empy_dict_on_not_existing_file(self):
         NOT_EXISTING=os.path.join("Path", "To", "Most", "Likely", "not", "xisting", "file")
-        self.assertEqual( load_learning_data_from_file(NOT_EXISTING), {})
+        self.assertEqual(get_urls_per_subject_from_file(NOT_EXISTING), {})
 
     def test_can_load_example_file(self):
         INPUT_FILE=os.path.join("tests", "data", "test_textimport.txt")
@@ -29,7 +29,7 @@ class TestLoadLearningData(unittest.TestCase):
             "cooking" : {"http://chefkoch.de", "http://kochen.de"},
             "cars" :   {"http://auto-motor-sport.de"}
         }
-        self.assertEqual(load_learning_data_from_file(INPUT_FILE), CONTEXT)
+        self.assertEqual(get_urls_per_subject_from_file(INPUT_FILE), CONTEXT)
 
 if __name__ == '__main__':
     unittest.main()

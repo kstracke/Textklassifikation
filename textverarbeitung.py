@@ -117,9 +117,8 @@ def appendWordFreqDictToExistingDict(existing, to_append):
     return existing
 
 
-def compareTextToLearningData(text, per_subject_wordfreq_dict):
+def compareWordFreqDictToLearningData(freq, per_subject_wordfreq_dict, params):
     FIRST_N_WORDS=40
-    freq = makeWordFrequencyDictionary(text)
     N_WORDS_TOT = len(freq.keys())
     log.debug("Words: %s" % pprint.pformat(freq))
 
@@ -136,3 +135,9 @@ def compareTextToLearningData(text, per_subject_wordfreq_dict):
         result[category] = score
 
     return  result
+
+
+def getWinningSubject(per_subject_score, classification_params):
+    # TODO: Return string of winning subject or None
+    # TODO: Write test
+    return None
