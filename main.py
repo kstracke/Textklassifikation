@@ -148,7 +148,7 @@ def main():
     if args.action == "learn":
         do_learning(wordlist_fn, args.data)
     else:
-        classification_params = dict()
+        classification_params = textverarbeitung.getClassificationStdParam()
         classification_params["min_difference_for_classication"] = 0.2
 
         if args.action == "classify":

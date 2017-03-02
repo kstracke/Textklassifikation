@@ -137,6 +137,12 @@ def compareWordFreqDictToLearningData(freq, per_subject_wordfreq_dict, params):
     return  result
 
 
+def getClassificationStdParam():
+    param = dict()
+    param["min_difference_for_classication"] = 0.2
+    return param
+
+
 def getWinningSubject(per_subject_score, classification_params):
     # TODO: Return string of winning subject or None
     # TODO: Write test
