@@ -144,6 +144,17 @@ def getClassificationStdParam():
 
 
 def getWinningSubject(per_subject_score, classification_params):
-    # TODO: Return string of winning subject or None
-    # TODO: Write test
-    return None
+    if len(per_subject_score) == 0: return None
+
+    max_score_scale = 1.0 / max(per_subject_score.values())
+    classification_thres = 1.0 - classification_params["min_difference_for_classication"]
+
+    failed_subjects = set([subject for subject, score in per_subject_score.items()
+                           if score*max_score_scale < classification_thres])
+
+    winning_subjects = set(per_subject_score.keys()) - failed_subjects
+
+    if len(winning_subjects) > 1:
+        return None
+    else:
+        return winning_subjects.pop()
