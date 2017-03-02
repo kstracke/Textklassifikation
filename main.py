@@ -119,8 +119,10 @@ def do_testing(wordlist_fn, testing_data_files, classification_params):
                     log.info("%s correctly classified to other" % url)
                 else:
                     log.warning("%s incorrectly classified to other, should be %s" % (url, subject))
+                    log.warning("Scores were: %s" % pprint.pformat(per_subject_score))
             elif classified_to != subject:
                 log.warning("%s incorrectly classified to %s." % (url, classified_to))
+                log.warning("Scores were: %s" % pprint.pformat(per_subject_score))
 
 
 def do_classification(wordlist_fn, classification_data_paths, classification_params):
