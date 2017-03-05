@@ -11,7 +11,7 @@ import logging as log
 import argparse
 
 
-def process_arguments():
+def processArguments():
     parser = argparse.ArgumentParser(description='Classification')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose flag')
     parser.add_argument('--debug', '-d', action='store_true', help='debug flag')
@@ -32,7 +32,7 @@ def process_arguments():
 
 # Länge=Wortanzahl ausgeben
 
-def process_tagged_urls_with(learning_data, merge_operation):
+def processTaggedUrlsWith(learning_data, merge_operation):
     per_subject_word_freq = {}
 
     for subject in learning_data:
@@ -53,26 +53,26 @@ def process_tagged_urls_with(learning_data, merge_operation):
     return per_subject_word_freq
 
 
-def merge_word_freqs( current_value, url, word_freq):
+def mergeWordFreqs(current_value, url, word_freq):
     return textverarbeitung.appendWordFreqDictToExistingDict(current_value, word_freq)
 
 
-def add_word_freq_per_url( current_value, url, word_freq):
+def addWordFreqPerUrl(current_value, url, word_freq):
     current_value[url] = word_freq
     return current_value
 
 
-def write_learning_data_to_file(per_subject_word_freq, filename):
+def writeLearningDataToFile(per_subject_word_freq, filename):
     wordfreq_dict_file = open(filename, mode="wb")
     pickle.dump(per_subject_word_freq, wordfreq_dict_file)
 
 
-def load_learning_data_from_file(filename):
+def loadLearningDataFromFile(filename):
     wordfreq_dict_file = open(filename, mode="rb")
     return pickle.load(wordfreq_dict_file)
 
 
-def setup_logging(args):
+def setupLogging(args):
     if args.verbose:
         verbosity = log.INFO
     else:
@@ -87,10 +87,10 @@ def setup_logging(args):
         log.basicConfig(level=verbosity)
 
 
-def do_learning(wordlist_fn, learning_data_files):
+def doLearning(wordlist_fn, learning_data_files):
     learning_data = textimport.get_urls_per_subject_from_file(learning_data_files)
-    per_subject_word_freq = process_tagged_urls_with(learning_data, merge_word_freqs)
-    write_learning_data_to_file(per_subject_word_freq, wordlist_fn)
+    per_subject_word_freq = processTaggedUrlsWith(learning_data, mergeWordFreqs)
+    writeLearningDataToFile(per_subject_word_freq, wordlist_fn)
 
     for subject, wordfreq_dist in per_subject_word_freq.items():
         sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
@@ -98,10 +98,10 @@ def do_learning(wordlist_fn, learning_data_files):
         log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
 
 
-def do_testing(wordlist_fn, testing_data_files, classification_params):
+def doTesting(wordlist_fn, testing_data_files, classification_params):
     testing_data = textimport.get_urls_per_subject_from_file(testing_data_files)
-    per_subject_url_and_word_freq = process_tagged_urls_with(testing_data, add_word_freq_per_url)
-    learned_per_subject_word_freq = load_learning_data_from_file(wordlist_fn)
+    per_subject_url_and_word_freq = processTaggedUrlsWith(testing_data, addWordFreqPerUrl)
+    learned_per_subject_word_freq = loadLearningDataFromFile(wordlist_fn)
 
     all_learned_subjects = learned_per_subject_word_freq.keys()
     log.info("Starting to classify to these categories %s" % ", ".join(all_learned_subjects) )
@@ -125,8 +125,8 @@ def do_testing(wordlist_fn, testing_data_files, classification_params):
                 log.warning("Scores were: %s" % pprint.pformat(per_subject_score))
 
 
-def do_classification(wordlist_fn, classification_data_paths, classification_params):
-    per_subject_word_freq = load_learning_data_from_file(wordlist_fn)
+def doClassification(wordlist_fn, classification_data_paths, classification_params):
+    per_subject_word_freq = loadLearningDataFromFile(wordlist_fn)
 
     results = {}
     for path in classification_data_paths:
@@ -142,21 +142,21 @@ def do_classification(wordlist_fn, classification_data_paths, classification_par
     pprint.pprint(results)
 
 def main():
-    args = process_arguments()
+    args = processArguments()
 
-    setup_logging(args)
+    setupLogging(args)
 
     wordlist_fn = args.learning_data if args.learning_data else "wordlists.obj"
     if args.action == "learn":
-        do_learning(wordlist_fn, args.data)
+        doLearning(wordlist_fn, args.data)
     else:
         classification_params = textverarbeitung.getClassificationStdParam()
         classification_params["min_difference_for_classication"] = 0.2
 
         if args.action == "classify":
-            do_classification(wordlist_fn, args.data, classification_params)
+            doClassification(wordlist_fn, args.data, classification_params)
         elif args.action == "test":
-            do_testing(wordlist_fn, args.data, classification_params)
+            doTesting(wordlist_fn, args.data, classification_params)
 
 if __name__ == '__main__':
     main()
