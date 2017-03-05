@@ -31,7 +31,7 @@ def cleanWordList(in_list):
     in_list = [x.lower() for x in in_list]
 
     for word in in_list:
-        # 2. filtere nur a-z, A-Z,
+        # 2. filtere nur a-z, A-Z, 0-9
         if not isValidWord(word):
             continue
 
