@@ -7,7 +7,9 @@ import re
 import nltk
 import logging as log
 import pprint
-import math
+import numpy
+
+from functools import  reduce
 
 from collections import defaultdict # sum of dicts
 
@@ -117,20 +119,19 @@ def appendWordFreqDictToExistingDict(existing, to_append):
     return existing
 
 
-def compareWordFreqDictToLearningData(freq, per_subject_wordfreq_dict, params):
+def compareWordFreqDictToLearningData(freq, learning_data, params):
     FIRST_N_WORDS=40
     N_WORDS_TOT = len(freq.keys())
     log.debug("Words: %s" % pprint.pformat(freq))
 
     result = {}
 
-    for category, wordfreq_dist in per_subject_wordfreq_dict.items():
-        learned_word_list = [ (float(x[0]), x[1]) for x in buildSortedListFromDictionary(wordfreq_dist)[:FIRST_N_WORDS]]
+    for category, category_words in learning_data.category_words.items():
+        test_word_list = [freq.get(word, 0) for word in category_words]
 
-        test_word_list = [(freq.get(x[1], 0), x[0]) for x in learned_word_list]
         log.debug("How it compares to %s:\n%s" % (category, pprint.pformat(test_word_list)))
 
-        sum_of_probabilities = sum([float(x[0]) for x in test_word_list])
+        sum_of_probabilities = sum([float(x) for x in test_word_list])
         score = N_WORDS_TOT * sum_of_probabilities / FIRST_N_WORDS
         result[category] = score
 
@@ -158,3 +159,33 @@ def getWinningSubject(per_subject_score, classification_params):
         return None
     else:
         return winning_subjects.pop()
+
+def buildClassificationSpaceBase(per_subject_wordfreq_dict):
+    FIRST_N_WORDS=40
+
+    result = set()
+
+    all_the_words = [set(word_freqs.keys()) for word_freqs in per_subject_wordfreq_dict.values()]
+
+    shared_words = reduce(lambda x, y: x & y, all_the_words) if len(all_the_words) > 1 else set()
+
+    log.info("Those words exist in every category: %s" % pprint.pformat(shared_words))
+
+    for category, wordfreq_dist in per_subject_wordfreq_dict.items():
+        log.info("Processing category %s" % category)
+        words = set([x[1] for x in buildSortedListFromDictionary(wordfreq_dist) if x[1] not in shared_words][:FIRST_N_WORDS])
+        intersection = words & result
+
+        if len(intersection) > 0:
+            log.warning("The base of category %s seems not to be unique! Those base elements already exist: %s" %
+                        (category, pprint.pformat(intersection)))
+
+        result |= words
+
+    return result
+
+def getClassificationVectorSpaceElement(base, word_freq_dict):
+    if len(base) > 0:
+        return numpy.array([float(word_freq_dict.get(word, 0.0)) for word in base])
+    else:
+        return None
