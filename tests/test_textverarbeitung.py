@@ -81,5 +81,35 @@ class TestMergeDictionary(unittest.TestCase):
         self.assertEqual(appendWordFreqDictToExistingDict(OLD, INPUT), RESULT)
 
 
+class TestGetWinningSubject(unittest.TestCase):
+
+    def test_empty_result(self):
+        INPUT = {}
+
+        self.assertEqual(getWinningSubject(INPUT, getClassificationStdParam()), None)
+
+    def test_get_correct_winner(self):
+        INPUT = { "stupid_option" : 1.0, "good_alternative" : 0.5, "better_alternative" : 0.1}
+
+        self.assertEqual(getWinningSubject(INPUT, getClassificationStdParam()), "stupid_option")
+
+    def test_get_scaling_independency(self):
+        INPUT_A = { "stupid_option" : 1.0, "good_alternative" : 0.5, "better_alternative" : 0.1}
+        INPUT_B = { "stupid_option" : 9.0, "good_alternative" : 4.5, "better_alternative" : 0.9}
+
+        param = getClassificationStdParam()
+        self.assertEqual(getWinningSubject(INPUT_A, param), getWinningSubject(INPUT_B, param))
+
+    def test_its_without_an_alternative(self):
+        INPUT = { "alternativlos" : 1  }
+
+        self.assertEqual(getWinningSubject(INPUT, getClassificationStdParam()), "alternativlos")
+
+    def test_too_close_to_be_sure(self):
+        INPUT = { "nuke_the_planet" : 0.99, "live_peacefully" : 1.0}
+
+        self.assertEqual(getWinningSubject(INPUT, getClassificationStdParam()), None)
+
+
 if __name__ == '__main__':
     unittest.main()

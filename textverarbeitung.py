@@ -31,7 +31,7 @@ def cleanWordList(in_list):
     in_list = [x.lower() for x in in_list]
 
     for word in in_list:
-        # 2. filtere nur a-z, A-Z,
+        # 2. filtere nur a-z, A-Z, 0-9
         if not isValidWord(word):
             continue
 
@@ -117,9 +117,8 @@ def appendWordFreqDictToExistingDict(existing, to_append):
     return existing
 
 
-def compareTextToLearningData(text, per_subject_wordfreq_dict):
+def compareWordFreqDictToLearningData(freq, per_subject_wordfreq_dict, params):
     FIRST_N_WORDS=40
-    freq = makeWordFrequencyDictionary(text)
     N_WORDS_TOT = len(freq.keys())
     log.debug("Words: %s" % pprint.pformat(freq))
 
@@ -136,3 +135,26 @@ def compareTextToLearningData(text, per_subject_wordfreq_dict):
         result[category] = score
 
     return  result
+
+
+def getClassificationStdParam():
+    param = dict()
+    param["min_difference_for_classication"] = 0.2
+    return param
+
+
+def getWinningSubject(per_subject_score, classification_params):
+    if len(per_subject_score) == 0: return None
+
+    max_score_scale = 1.0 / max(per_subject_score.values())
+    classification_thres = 1.0 - classification_params["min_difference_for_classication"]
+
+    failed_subjects = set([subject for subject, score in per_subject_score.items()
+                           if score*max_score_scale < classification_thres])
+
+    winning_subjects = set(per_subject_score.keys()) - failed_subjects
+
+    if len(winning_subjects) > 1:
+        return None
+    else:
+        return winning_subjects.pop()
