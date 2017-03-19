@@ -3,6 +3,7 @@
 
 import unittest
 import sys, os
+import numpy
 
 # Modulsuchpfad erweitern
 THIS_MODULES_PATH = os.path.dirname(__file__)
@@ -110,6 +111,58 @@ class TestGetWinningSubject(unittest.TestCase):
 
         self.assertEqual(getWinningSubject(INPUT, getClassificationStdParam()), None)
 
+
+class TestBuildClassificationVectorSpaceBase(unittest.TestCase):
+
+    def test_empty(self):
+        INPUT = {'subject1': {}}
+        OUTPUT = set()
+
+        self.assertEqual(buildClassificationSpaceBase(INPUT), OUTPUT)
+
+
+    def test_overlap(self):
+        INPUT = {'subject1': {'word1': 0.1, 'word2': 0.2},
+                 'subject2': {'word2': 0.01, 'word3': 0.5},
+                 'subject3': {'word4': 1.0, 'word1': 1.0}
+                }
+        OUTPUT = {'word1', 'word2', 'word3', 'word4'}
+
+        self.assertEqual(buildClassificationSpaceBase(INPUT), OUTPUT)
+
+    def test_remove_shared(self):
+        INPUT = {'subject1': {'word1': 0.1, 'word2': 0.2},
+                 'subject2': {'word2': 0.01, 'word3': 0.5},
+                 'subject3': {'word2': 0.5, 'word4': 1.0}
+                 }
+        OUTPUT = {'word1', 'word3', 'word4'}
+
+        self.assertEqual(buildClassificationSpaceBase(INPUT), OUTPUT)
+
+
+    def test_length_limited(self):
+        MAX_N = 40
+        INPUT = {'subject1': {'word' + str(i): 1.0/(i+1) for i in range(MAX_N+1)}}
+        OUTPUT = {'word' + str(i) for i in range(MAX_N)}
+
+        self.assertEqual(buildClassificationSpaceBase(INPUT), OUTPUT)
+
+
+class TestGetClassificationVectorSpaceElement(unittest.TestCase):
+
+    def test_null(self):
+        BASE = set()
+        INPUT = {'word1': 0.1, 'word2': 0.2}
+        OUTPUT = None
+
+        self.assertTrue( (getClassificationVectorSpaceElement(BASE, INPUT) is OUTPUT))
+
+    def test_base_smaller_than_input(self):
+        BASE = {'word1', 'word2'}
+        INPUT = {'word1': 0.1, 'word2': 0.2, 'word3': 1.0}
+        OUTPUT = numpy.array([0.1, 0.2])
+
+        self.assertTrue((getClassificationVectorSpaceElement(BASE, INPUT) == OUTPUT).all() )
 
 if __name__ == '__main__':
     unittest.main()

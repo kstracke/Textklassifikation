@@ -11,6 +11,13 @@ import logging as log
 import argparse
 
 
+class LearningData:
+    base = set()
+    category_words = dict()
+    data = []
+    target = []
+
+
 def processArguments():
     parser = argparse.ArgumentParser(description='Classification')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose flag')
@@ -62,14 +69,14 @@ def addWordFreqPerUrl(current_value, url, word_freq):
     return current_value
 
 
-def writeLearningDataToFile(per_subject_word_freq, filename):
-    wordfreq_dict_file = open(filename, mode="wb")
-    pickle.dump(per_subject_word_freq, wordfreq_dict_file)
+def writeLearningDataToFile(learning_data, filename):
+    learning_data_file = open(filename, mode="wb")
+    pickle.dump(learning_data, learning_data_file)
 
 
 def loadLearningDataFromFile(filename):
-    wordfreq_dict_file = open(filename, mode="rb")
-    return pickle.load(wordfreq_dict_file)
+    learning_data_file = open(filename, mode="rb")
+    return pickle.load(learning_data_file)
 
 
 def setupLogging(args):
@@ -88,28 +95,49 @@ def setupLogging(args):
 
 
 def doLearning(wordlist_fn, learning_data_files):
-    learning_data = textimport.get_urls_per_subject_from_file(learning_data_files)
-    per_subject_word_freq = processTaggedUrlsWith(learning_data, mergeWordFreqs)
-    writeLearningDataToFile(per_subject_word_freq, wordlist_fn)
+    per_subject_urls = textimport.get_urls_per_subject_from_file(learning_data_files)
+    per_subject_url_and_word_freq = processTaggedUrlsWith(per_subject_urls, addWordFreqPerUrl)
+    per_subject_word_freq = dict()
 
-    for subject, wordfreq_dist in per_subject_word_freq.items():
-        sorted_word_dist = textverarbeitung.buildSortedListFromDictionary(wordfreq_dist)
+    # build per subject wordfreq dictionary, keeping all the word lists in memory
+    for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
+        for url, wordfreq_dist in url_and_word_freq_dist.items():
+            per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, dict()), "", wordfreq_dist)
 
-        log.info("Wortliste der Kategorie %s\n\n%s" % (subject, pprint.pformat(sorted_word_dist[:40])))
+    classification_base = textverarbeitung.buildClassificationSpaceBase(per_subject_word_freq)
+    log.debug("Constructed the following base of length %i: %s" % (len(classification_base), pprint.pformat(classification_base)))
+
+    learning_data = LearningData()
+    learning_data.base = classification_base
+    learning_data.category_words = {subject: classification_base & set(word_freqs.keys()) for subject, word_freqs in per_subject_word_freq.items()}
+
+    log.debug("The categories have these words: %s" % pprint.pformat(learning_data.category_words))
+
+    # now that we have a base, construct the vectors for each URL
+    for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
+        for url, wordfreq_dist in url_and_word_freq_dist.items():
+            p = textverarbeitung.getClassificationVectorSpaceElement(classification_base, wordfreq_dist)
+            learning_data.data.append(p)
+            learning_data.target.append(subject)
+
+            log.debug("Constructed vector %s" % pprint.pformat(p))
+
+    writeLearningDataToFile(learning_data, wordlist_fn)
+
 
 
 def doTesting(wordlist_fn, testing_data_files, classification_params):
     testing_data = textimport.get_urls_per_subject_from_file(testing_data_files)
     per_subject_url_and_word_freq = processTaggedUrlsWith(testing_data, addWordFreqPerUrl)
-    learned_per_subject_word_freq = loadLearningDataFromFile(wordlist_fn)
+    learning_data = loadLearningDataFromFile(wordlist_fn)
 
-    all_learned_subjects = learned_per_subject_word_freq.keys()
+    all_learned_subjects = set(learning_data.target)
     log.info("Starting to classify to these categories %s" % ", ".join(all_learned_subjects) )
 
     for subject, url_and_wordfreq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_wordfreq_dist.items():
             per_subject_score = textverarbeitung.compareWordFreqDictToLearningData(
-                wordfreq_dist, learned_per_subject_word_freq, classification_params)
+                wordfreq_dist, learning_data, classification_params)
             classified_to = textverarbeitung.getWinningSubject(per_subject_score, classification_params)
 
             if classified_to == subject:
@@ -126,7 +154,7 @@ def doTesting(wordlist_fn, testing_data_files, classification_params):
 
 
 def doClassification(wordlist_fn, classification_data_paths, classification_params):
-    per_subject_word_freq = loadLearningDataFromFile(wordlist_fn)
+    learning_data = loadLearningDataFromFile(wordlist_fn)
 
     results = {}
     for path in classification_data_paths:
@@ -134,7 +162,7 @@ def doClassification(wordlist_fn, classification_data_paths, classification_para
         if len(RAW_TEXT) > 0:
             freq =  textverarbeitung.makeWordFrequencyDictionary(RAW_TEXT)
             per_subject_score = textverarbeitung.compareWordFreqDictToLearningData(
-                freq, per_subject_word_freq, classification_params)
+                freq, learning_data, classification_params)
             results[path] = per_subject_score
         else:
             log.warning("Cannot read text from %s" % path)
@@ -146,17 +174,17 @@ def main():
 
     setupLogging(args)
 
-    wordlist_fn = args.learning_data if args.learning_data else "wordlists.obj"
+    learning_data_fn = args.learning_data if args.learning_data else "learningdata.obj"
     if args.action == "learn":
-        doLearning(wordlist_fn, args.data)
+        doLearning(learning_data_fn, args.data)
     else:
         classification_params = textverarbeitung.getClassificationStdParam()
         classification_params["min_difference_for_classication"] = 0.2
 
         if args.action == "classify":
-            doClassification(wordlist_fn, args.data, classification_params)
+            doClassification(learning_data_fn, args.data, classification_params)
         elif args.action == "test":
-            doTesting(wordlist_fn, args.data, classification_params)
+            doTesting(learning_data_fn, args.data, classification_params)
 
 if __name__ == '__main__':
     main()
