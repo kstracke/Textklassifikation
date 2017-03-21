@@ -16,6 +16,7 @@ from collections import defaultdict # sum of dicts
 from fractions import Fraction # rational numbers
 
 from nltk.corpus import stopwords
+from sortedcontainers import SortedSet
 
 # NLTK-Stoppwörter global in Set importieren
 STOP_WORDS = set(stopwords.words('english'))
@@ -124,7 +125,15 @@ def compareWordFreqDictToLearningData(freq, learning_data, params):
     N_WORDS_TOT = len(freq.keys())
     log.debug("Words: %s" % pprint.pformat(freq))
 
-    result = {}
+
+    p = learning_data.scaler.transform(
+        getClassificationVectorSpaceElement(learning_data.base, freq).reshape(1,-1)
+    )
+    res = learning_data.classifier.predict_proba(p.reshape(1,-1))
+
+    result = {subject: score for subject, score in zip(learning_data.all_learned_subjects, res[0])}
+
+    return result
 
     for category, category_words in learning_data.category_words.items():
         test_word_list = [freq.get(word, 0) for word in category_words]
@@ -163,17 +172,18 @@ def getWinningSubject(per_subject_score, classification_params):
 def buildClassificationSpaceBase(per_subject_wordfreq_dict):
     FIRST_N_WORDS=40
 
-    result = set()
+    result = SortedSet()
 
-    all_the_words = [set(word_freqs.keys()) for word_freqs in per_subject_wordfreq_dict.values()]
+    all_the_words = [SortedSet(word_freqs.keys()) for word_freqs in per_subject_wordfreq_dict.values()]
 
-    shared_words = reduce(lambda x, y: x & y, all_the_words) if len(all_the_words) > 1 else set()
+    shared_words = reduce(lambda x, y: x & y, all_the_words) if len(all_the_words) > 1 else SortedSet()
+    #shared_words = SortedSet()
 
     log.info("Those words exist in every category: %s" % pprint.pformat(shared_words))
 
     for category, wordfreq_dist in per_subject_wordfreq_dict.items():
         log.info("Processing category %s" % category)
-        words = set([x[1] for x in buildSortedListFromDictionary(wordfreq_dist) if x[1] not in shared_words][:FIRST_N_WORDS])
+        words = SortedSet([x[1] for x in buildSortedListFromDictionary(wordfreq_dist) if x[1] not in shared_words][:FIRST_N_WORDS])
         intersection = words & result
 
         if len(intersection) > 0:

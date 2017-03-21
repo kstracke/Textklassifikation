@@ -11,11 +11,23 @@ import logging as log
 import argparse
 
 
+from numpy import array
+
+from sortedcontainers import SortedSet, SortedDict
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report
+from sklearn.svm import SVC
+
 class LearningData:
-    base = set()
-    category_words = dict()
-    data = []
-    target = []
+    def __init__(self):
+        self.base = set()
+        self.category_words = dict()
+        self.data = []
+        self.target = []
 
 
 def processArguments():
@@ -40,7 +52,7 @@ def processArguments():
 # Länge=Wortanzahl ausgeben
 
 def processTaggedUrlsWith(learning_data, merge_operation):
-    per_subject_word_freq = {}
+    per_subject_word_freq = SortedDict()
 
     for subject in learning_data:
         for url in learning_data[subject]:
@@ -52,7 +64,7 @@ def processTaggedUrlsWith(learning_data, merge_operation):
                 log.debug("Word list: %s" % pprint.pformat(freq))
 
                 per_subject_word_freq[subject] = merge_operation(
-                    per_subject_word_freq.get(subject, dict() ), url, freq )
+                    per_subject_word_freq.get(subject, SortedDict()), url, freq )
             else:
                 log.warning("ERROR: No text from %s" % url)
 
@@ -122,6 +134,60 @@ def doLearning(wordlist_fn, learning_data_files):
 
             log.debug("Constructed vector %s" % pprint.pformat(p))
 
+    # Split the dataset in two equal parts
+    scaler = StandardScaler()
+    learning_data.data = scaler.fit_transform(learning_data.data)
+    learning_data.scaler = scaler
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        array(learning_data.data), learning_data.target, test_size=0.75, random_state=0
+    )
+
+    knear_tuned_parameters = {
+        'n_neighbors': [3, 4, 5, 6],
+        'algorithm': ['ball_tree', 'kd_tree', 'brute'],
+        'weights': ['uniform', 'distance']
+    }
+
+    svm_tuned_parameters = {
+        'kernel': ['linear', 'rbf'],
+        'C': [0.1, 1, 10],
+        'decision_function_shape': ['ovo', 'ovr']
+    }
+
+    scores = ['precision', 'recall']
+
+    for score in scores:
+        print("# Tuning hyper-parameters for %s" % score)
+        print()
+
+        #clf = GridSearchCV(KNeighborsClassifier(), knear_tuned_parameters, cv=5)
+        clf = GridSearchCV(SVC(probability=True), svm_tuned_parameters, cv=5)
+        clf.fit(X_train, y_train)
+
+        print("Best parameters set found on development set:")
+        print()
+        print(clf.best_params_)
+        print()
+        print("Grid scores on development set:")
+        print()
+        means = clf.cv_results_['mean_test_score']
+        stds = clf.cv_results_['std_test_score']
+        for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+            print("%0.3f (+/-%0.03f) for %r"
+                  % (mean, std * 2, params))
+        print()
+
+        print("Detailed classification report:")
+        print()
+        print("The model is trained on the full development set.")
+        print("The scores are computed on the full evaluation set.")
+        print()
+        y_true, y_pred = y_test, clf.predict(X_test)
+        print(classification_report(y_true, y_pred))
+        print()
+        learning_data.classifier = clf.best_estimator_
+
     writeLearningDataToFile(learning_data, wordlist_fn)
 
 
@@ -131,19 +197,26 @@ def doTesting(wordlist_fn, testing_data_files, classification_params):
     per_subject_url_and_word_freq = processTaggedUrlsWith(testing_data, addWordFreqPerUrl)
     learning_data = loadLearningDataFromFile(wordlist_fn)
 
-    all_learned_subjects = set(learning_data.target)
-    log.info("Starting to classify to these categories %s" % ", ".join(all_learned_subjects) )
+    learning_data.all_learned_subjects = SortedSet(learning_data.target)
 
+    log.info("Starting to classify to these categories %s" % ", ".join(learning_data.all_learned_subjects) )
+    print(learning_data.base)
+    print(learning_data.classifier)
+
+    all_counter = 0
+    correct_counter = 0
     for subject, url_and_wordfreq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_wordfreq_dist.items():
+            all_counter = all_counter + 1
             per_subject_score = textverarbeitung.compareWordFreqDictToLearningData(
                 wordfreq_dist, learning_data, classification_params)
             classified_to = textverarbeitung.getWinningSubject(per_subject_score, classification_params)
 
             if classified_to == subject:
                 log.info("%s correctly classified to %s" % (url, classified_to))
-            elif classified_to == None:
-                if subject not in all_learned_subjects:
+                correct_counter = correct_counter + 1
+            elif classified_to is None:
+                if subject not in learning_data.all_learned_subjects:
                     log.info("%s correctly classified to other" % url)
                 else:
                     log.warning("%s incorrectly classified to other, should be %s" % (url, subject))
@@ -152,6 +225,7 @@ def doTesting(wordlist_fn, testing_data_files, classification_params):
                 log.warning("%s incorrectly classified to %s." % (url, classified_to))
                 log.warning("Scores were: %s" % pprint.pformat(per_subject_score))
 
+    print("Correct classified: %f %%" % (correct_counter*100.0 / all_counter) )
 
 def doClassification(wordlist_fn, classification_data_paths, classification_params):
     learning_data = loadLearningDataFromFile(wordlist_fn)
