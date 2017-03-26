@@ -16,7 +16,7 @@ from collections import defaultdict # sum of dicts
 from fractions import Fraction # rational numbers
 
 from nltk.corpus import stopwords
-from sortedcontainers import SortedSet
+from sortedcontainers import SortedSet, SortedDict
 
 # NLTK-Stoppwörter global in Set importieren
 STOP_WORDS = set(stopwords.words('english'))
@@ -68,7 +68,7 @@ def wordListToFreqDict(wordlist, scale=1):
     # for token in nltk.pos_tag(nltk.word_tokenize(sorted_text, language="english"), tagset="universal"):
     #   pp.pprint("word: ", token)
     wordfreq = [ Fraction(wordlist.count(p), scale) for p in wordlist]
-    return dict(zip(wordlist, wordfreq))
+    return SortedDict(zip(wordlist, wordfreq))
 
 
 # Worte nach Häufigkeit des Vorkommens sortieren
@@ -148,16 +148,17 @@ def compareWordFreqDictToLearningData(freq, learning_data, params):
 
 
 def getClassificationStdParam():
-    param = dict()
-    param["min_difference_for_classication"] = 0.2
+    param = SortedDict()
+    param["min_difference_for_classification"] = 0.2
     return param
 
 
 def getWinningSubject(per_subject_score, classification_params):
     if len(per_subject_score) == 0: return None
-
+    max_score = max(per_subject_score.values())
+    if max_score < 0.6: return None
     max_score_scale = 1.0 / max(per_subject_score.values())
-    classification_thres = 1.0 - classification_params["min_difference_for_classication"]
+    classification_thres = 1.0 - classification_params["min_difference_for_classification"]
 
     failed_subjects = set([subject for subject, score in per_subject_score.items()
                            if score*max_score_scale < classification_thres])

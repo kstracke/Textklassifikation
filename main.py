@@ -25,7 +25,7 @@ from sklearn.svm import SVC
 class LearningData:
     def __init__(self):
         self.base = set()
-        self.category_words = dict()
+        self.category_words = SortedDict()
         self.data = []
         self.target = []
 
@@ -109,12 +109,12 @@ def setupLogging(args):
 def doLearning(wordlist_fn, learning_data_files):
     per_subject_urls = textimport.get_urls_per_subject_from_file(learning_data_files)
     per_subject_url_and_word_freq = processTaggedUrlsWith(per_subject_urls, addWordFreqPerUrl)
-    per_subject_word_freq = dict()
+    per_subject_word_freq = SortedDict()
 
     # build per subject wordfreq dictionary, keeping all the word lists in memory
     for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_word_freq_dist.items():
-            per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, dict()), "", wordfreq_dist)
+            per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, SortedDict()), "", wordfreq_dist)
 
     classification_base = textverarbeitung.buildClassificationSpaceBase(per_subject_word_freq)
     log.debug("Constructed the following base of length %i: %s" % (len(classification_base), pprint.pformat(classification_base)))
@@ -253,7 +253,7 @@ def main():
         doLearning(learning_data_fn, args.data)
     else:
         classification_params = textverarbeitung.getClassificationStdParam()
-        classification_params["min_difference_for_classication"] = 0.2
+        classification_params["min_difference_for_classification"] = 0.2
 
         if args.action == "classify":
             doClassification(learning_data_fn, args.data, classification_params)
