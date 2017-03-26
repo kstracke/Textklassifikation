@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 
 from breadability.readable import Article
 
+from sortedcontainers import SortedSet, SortedDict
+
 ##########################################################################
 # Text-Gewinnung
 #
@@ -71,7 +73,7 @@ def load_text(path):
 
 
 def get_urls_per_subject_from_file(fn_list):
-    urls_per_subject = {}
+    urls_per_subject = SortedDict()
 
     # turn a simple string into a list of string
     if isinstance(fn_list, str):
@@ -91,7 +93,7 @@ def get_urls_per_subject_from_file(fn_list):
                     if key in urls_per_subject:
                         urls_per_subject[key].add(url)
                     else:
-                        urls_per_subject[key] = {url}
+                        urls_per_subject[key] = SortedSet({url})
                 else:
                     continue
 

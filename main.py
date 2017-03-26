@@ -143,17 +143,17 @@ def doLearning(wordlist_fn, learning_data_files):
         array(learning_data.data), learning_data.target, test_size=0.75, random_state=0
     )
 
-    knear_tuned_parameters = {
+    knear_tuned_parameters = SortedDict({
         'n_neighbors': [3, 4, 5, 6],
         'algorithm': ['ball_tree', 'kd_tree', 'brute'],
         'weights': ['uniform', 'distance']
-    }
+    })
 
-    svm_tuned_parameters = {
+    svm_tuned_parameters = SortedDict({
         'kernel': ['linear', 'rbf'],
         'C': [0.1, 1, 10],
         'decision_function_shape': ['ovo', 'ovr']
-    }
+    })
 
     scores = ['precision', 'recall']
 
