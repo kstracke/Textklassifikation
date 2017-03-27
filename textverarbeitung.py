@@ -130,8 +130,9 @@ def compareWordFreqDictToLearningData(freq, learning_data, params):
         getClassificationVectorSpaceElement(learning_data.base, freq).reshape(1,-1)
     )
     res = learning_data.classifier.predict_proba(p.reshape(1,-1))
+    #res = learning_data.classifier.decision_function(p.reshape(1,-1))
 
-    result = {subject: score for subject, score in zip(learning_data.all_learned_subjects, res[0])}
+    result = SortedDict({subject: score for subject, score in zip(learning_data.all_learned_subjects, res[0])})
 
     return result
 
@@ -148,15 +149,23 @@ def compareWordFreqDictToLearningData(freq, learning_data, params):
 
 
 def getClassificationStdParam():
-    param = SortedDict()
+    param = {}
     param["min_difference_for_classification"] = 0.2
+    param["other_cutoff"] = 0.55
+    param["algorithm"] = "svm"
+    param["remove_shared_words"] = True
+
     return param
 
 
 def getWinningSubject(per_subject_score, classification_params):
-    if len(per_subject_score) == 0: return None
+    if len(per_subject_score) == 0:
+        return None
+
     max_score = max(per_subject_score.values())
-    if max_score < 0.6: return None
+    if max_score < classification_params["other_cutoff"]:
+        return None
+
     max_score_scale = 1.0 / max(per_subject_score.values())
     classification_thres = 1.0 - classification_params["min_difference_for_classification"]
 
@@ -170,15 +179,17 @@ def getWinningSubject(per_subject_score, classification_params):
     else:
         return winning_subjects.pop()
 
-def buildClassificationSpaceBase(per_subject_wordfreq_dict):
+def buildClassificationSpaceBase(per_subject_wordfreq_dict, classification_params):
     FIRST_N_WORDS=40
 
     result = SortedSet()
 
     all_the_words = [SortedSet(word_freqs.keys()) for word_freqs in per_subject_wordfreq_dict.values()]
 
-    shared_words = reduce(lambda x, y: x & y, all_the_words) if len(all_the_words) > 1 else SortedSet()
-    #shared_words = SortedSet()
+    if classification_params["remove_shared_words"]:
+        shared_words = reduce(lambda x, y: x & y, all_the_words) if len(all_the_words) > 1 else SortedSet()
+    else:
+        shared_words = SortedSet()
 
     log.info("Those words exist in every category: %s" % pprint.pformat(shared_words))
 
