@@ -151,7 +151,7 @@ def compareWordFreqDictToLearningData(freq, learning_data, params):
 def getClassificationStdParam():
     param = {}
     param["min_difference_for_classification"] = 0.2
-    param["other_cutoff"] = 0.55
+    param["other_cutoff"] = 0.6
     param["algorithm"] = "svm"
     param["remove_shared_words"] = True
 
