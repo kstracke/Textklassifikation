@@ -8,6 +8,7 @@ import nltk
 import logging as log
 import pprint
 import numpy
+import classification
 
 from functools import  reduce
 
@@ -122,31 +123,23 @@ def appendWordFreqDictToExistingDict(existing, to_append):
 
 def compareWordFreqDictToLearningData(freq, learning_data, params):
     FIRST_N_WORDS=40
-    N_WORDS_TOT = len(freq.keys())
     log.debug("Words: %s" % pprint.pformat(freq))
 
 
     p = learning_data.scaler.transform(
         getClassificationVectorSpaceElement(learning_data.base, freq).reshape(1,-1)
     )
+    if isinstance(learning_data.classifier, classification.SelfmadeNaive):
+        # For our selfmade classifier, we need to scale the vectors differently
+        N_WORDS_TOT = len(freq.keys())
+        WORDS_PER_BASE = len(learning_data.base) / len(learning_data.all_learned_subjects)
+        p *= N_WORDS_TOT / WORDS_PER_BASE
+
     res = learning_data.classifier.predict_proba(p.reshape(1,-1))
     #res = learning_data.classifier.decision_function(p.reshape(1,-1))
 
     result = SortedDict({subject: score for subject, score in zip(learning_data.all_learned_subjects, res[0])})
-
     return result
-
-    for category, category_words in learning_data.category_words.items():
-        test_word_list = [freq.get(word, 0) for word in category_words]
-
-        log.debug("How it compares to %s:\n%s" % (category, pprint.pformat(test_word_list)))
-
-        sum_of_probabilities = sum([float(x) for x in test_word_list])
-        score = N_WORDS_TOT * sum_of_probabilities / FIRST_N_WORDS
-        result[category] = score
-
-    return  result
-
 
 def getClassificationStdParam():
     param = {}

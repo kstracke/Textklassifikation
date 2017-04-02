@@ -21,7 +21,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB, MultinomialNB
+from sklearn.naive_bayes import MultinomialNB
+
+from classification import DummyScaler, SelfmadeNaive
 
 class LearningData:
     def __init__(self):
@@ -29,13 +31,6 @@ class LearningData:
         self.category_words = SortedDict()
         self.data = []
         self.target = []
-
-class DummyScaler:
-    def fit_transform(self, X):
-        return X
-    def transform(self, X):
-        return X
-
 
 def processArguments():
     classification_params = textverarbeitung.getClassificationStdParam()
@@ -48,7 +43,7 @@ def processArguments():
     subparsers = parser.add_subparsers(dest="action")
 
     parser_learn = subparsers.add_parser('learn', help='learn from the given data')
-    parser_learn.add_argument('--algorithm', default="svm", choices=["svm", "knn", "nb-multi"], help='classification algorithm')
+    parser_learn.add_argument('--algorithm', default="svm", choices=["svm", "knn", "bayes", "naive"], help='classification algorithm')
     parser_learn.add_argument('--keep-shared-words', default=False, action='store_true',
                               help='keep words, which occur in every word list (default: remove)')
     parser_learn.add_argument('--learning-data', '-l', help='Write learning data to this file')
@@ -165,10 +160,13 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
             log.debug("Constructed vector %s" % pprint.pformat(p))
 
     # Split the dataset in two equal parts
-    if classification_params["algorithm"] == "nb-multi":
+    if classification_params["algorithm"] == "bayes":
         scaler = StandardScaler(with_mean=False)
+    elif classification_params["algorithm"] == "naive":
+        scaler = DummyScaler()
     else:
         scaler = StandardScaler()
+
     learning_data.data = scaler.fit_transform(learning_data.data)
     learning_data.scaler = scaler
 
@@ -198,6 +196,8 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
         'fit_prior': [True, False]
     })
 
+    selfmade_naive_tuned_parameters = {}
+
     scores = ['precision', 'recall']
 
     for score in scores:
@@ -208,8 +208,11 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
             clf = GridSearchCV(KNeighborsClassifier(), knear_tuned_parameters, cv=5)
         elif classification_params["algorithm"] == "svm":
             clf = GridSearchCV(SVC(probability=True, tol=1e-5), svm_tuned_parameters, cv=5)
-        elif classification_params["algorithm"] == "nb-multi":
+        elif classification_params["algorithm"] == "bayes":
             clf = GridSearchCV(MultinomialNB(), naive_bayes_multinominal_tuned_parameters, cv=5)
+        elif classification_params["algorithm"] == "naive":
+            # no parameter tuning needed
+            clf = GridSearchCV(SelfmadeNaive(), selfmade_naive_tuned_parameters, cv=5)
         else:
             log.error("Unsupported algorithm " % classification_params["algorithm"])
             sys.exit(1)
