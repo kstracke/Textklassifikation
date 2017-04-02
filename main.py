@@ -44,6 +44,9 @@ def processArguments():
 
     parser_learn = subparsers.add_parser('learn', help='learn from the given data')
     parser_learn.add_argument('--algorithm', default="svm", choices=["svm", "knn", "bayes", "naive"], help='classification algorithm')
+    parser_learn.add_argument('--category-base-length', type=int,
+                             default=classification_params['category_base_length'],
+                             help='Use the first N most frequent words of the category\'s word list to be part of the global base.')
     parser_learn.add_argument('--keep-shared-words', default=False, action='store_true',
                               help='keep words, which occur in every word list (default: remove)')
     parser_learn.add_argument('--learning-data', '-l', help='Write learning data to this file')
@@ -69,7 +72,12 @@ def processArguments():
     parser_test.add_argument('data', nargs='+', help=
     'Data to process. A file containing the text to classify  or an URL is expected')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.action == None:
+        parser.parse_args(["--help"])
+        exit()
+    return  args
 
 
 ################################################################################
@@ -318,9 +326,11 @@ def main():
     setupLogging(args)
 
     learning_data_fn = args.learning_data if args.learning_data else "learningdata.obj"
+
     if args.action == "learn":
         classification_params = textverarbeitung.getClassificationStdParam()
         classification_params["algorithm"] = args.algorithm
+        classification_params["category_base_length"] = args.category_base_length
         classification_params["remove_shared_words"] = False if args.keep_shared_words else True
 
         doLearning(learning_data_fn, args.data, classification_params)

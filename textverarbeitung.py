@@ -146,6 +146,7 @@ def getClassificationStdParam():
     param["min_difference_for_classification"] = 0.2
     param["other_cutoff"] = 0.6
     param["algorithm"] = "svm"
+    param["category_base_length"] = 40  # aka first_n_words
     param["remove_shared_words"] = True
 
     return param
@@ -173,7 +174,7 @@ def getWinningSubject(per_subject_score, classification_params):
         return winning_subjects.pop()
 
 def buildClassificationSpaceBase(per_subject_wordfreq_dict, classification_params):
-    FIRST_N_WORDS=40
+    first_n_words = classification_params["category_base_length"]
 
     result = SortedSet()
 
@@ -188,7 +189,7 @@ def buildClassificationSpaceBase(per_subject_wordfreq_dict, classification_param
 
     for category, wordfreq_dist in per_subject_wordfreq_dict.items():
         log.info("Processing category %s" % category)
-        words = SortedSet([x[1] for x in buildSortedListFromDictionary(wordfreq_dist) if x[1] not in shared_words][:FIRST_N_WORDS])
+        words = SortedSet([x[1] for x in buildSortedListFromDictionary(wordfreq_dist) if x[1] not in shared_words][:first_n_words])
         intersection = words & result
 
         if len(intersection) > 0:
