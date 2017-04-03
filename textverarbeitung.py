@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-# Verarbeiten des Eingelesenen Textes - Tokenisieren, Filtern
+# Verarbeiten des eingelesenen Textes - Tokenisieren, Filtern
 
 import re
 import nltk
@@ -43,7 +43,7 @@ def cleanWordList(in_list):
         # verwendet die split-funktion eines strings; die liefert eine Liste der Teile
         for split_word in word.split("-"):
             if isValidWord(split_word):
-                #Stemiing = Worte werden auf den Wortstamm zurückgeführt
+                #Stemming = Worte werden auf den Wortstamm zurückgeführt
                 stem_word = STEMMER.stem(split_word)
                 out_list.append(stem_word)
 

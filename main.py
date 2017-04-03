@@ -82,8 +82,6 @@ def processArguments():
 
 ################################################################################
 
-# Länge=Wortanzahl ausgeben
-
 def processTaggedUrlsWith(learning_data, merge_operation):
     per_subject_word_freq = SortedDict()
 
