@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 
 import logging as log
 import numpy
@@ -34,6 +36,7 @@ class SelfmadeNaive(BaseEstimator):
             log.warning("Predicted probabilities input: %s" % pprint.pformat(X))
             result = []
             for category, category_vec in self.per_category_base.items():
+                # summiere die Kompenenten von x, die zur Basis der Kategorie gehören
                 score = numpy.sum( (category_vec > 0) * X)
 
                 log.debug("How it compares to %s: %f" % (category, score))
