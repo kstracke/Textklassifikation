@@ -148,7 +148,9 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
             per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, SortedDict()), "", wordfreq_dist)
 
     classification_base = textverarbeitung.buildClassificationSpaceBase(per_subject_word_freq, classification_params)
-    log.debug("Constructed the following base of length %i: %s" % (len(classification_base), pprint.pformat(classification_base)))
+
+    constructed_base_as_text_output = "\n\t".join(classification_base)
+    log.info("Constructed the following base of length %i:\n\t%s" % (len(classification_base), constructed_base_as_text_output))
 
     learning_data = LearningData()
     learning_data.base = classification_base
