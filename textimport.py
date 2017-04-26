@@ -42,10 +42,10 @@ def load_text_from_url(url):
         con = urllib.request.urlopen(req)
         html = con.read()
 
-        # use breadability to extract the main html
+        # Nutzen von breadability, um den relevanten html-Code herauszufiltern
         filtered_html = Article(html, url=url).readable
 
-        # convert to text
+        # in Text umwandeln
         soup = BeautifulSoup(filtered_html, 'html.parser')
 
         texts = soup.find_all(text=True)
