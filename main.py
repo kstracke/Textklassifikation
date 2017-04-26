@@ -32,6 +32,9 @@ class LearningData:
         self.data = []
         self.target = []
 
+
+
+# Parameter für die Bedienung über die Konsole
 def processArguments():
     classification_params = textverarbeitung.getClassificationStdParam()
 
@@ -81,7 +84,7 @@ def processArguments():
 
 
 ################################################################################
-
+# Text von Webseite herunterladen, verarbeiten
 def processTaggedUrlsWith(learning_data, merge_operation):
     per_subject_word_freq = SortedDict()
 
@@ -137,16 +140,20 @@ def setupLogging(args):
         log.basicConfig(level=verbosity)
 
 
+# Vorgehensweise im Lernmodus
 def doLearning(wordlist_fn, learning_data_files, classification_params):
+
     per_subject_urls = textimport.get_urls_per_subject_from_file(learning_data_files)
     per_subject_url_and_word_freq = processTaggedUrlsWith(per_subject_urls, addWordFreqPerUrl)
     per_subject_word_freq = SortedDict()
 
-    # build per subject wordfreq dictionary, keeping all the word lists in memory
+    # Erstellen eines wordfreq dictionary, alle Wortlisten werden dabei im Speicher belassen
     for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_word_freq_dist.items():
             per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, SortedDict()), "", wordfreq_dist)
 
+
+    # Erstellen der Basis
     classification_base = textverarbeitung.buildClassificationSpaceBase(per_subject_word_freq, classification_params)
 
     constructed_base_as_text_output = "\n\t".join(classification_base)
@@ -158,7 +165,8 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
 
     log.debug("The categories have these words: %s" % pprint.pformat(learning_data.category_words))
 
-    # now that we have a base, construct the vectors for each URL
+
+    # Konstruieren der Vektoren für jede URL auf der erstelllten Basis
     for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_word_freq_dist.items():
             p = textverarbeitung.getClassificationVectorSpaceElement(classification_base, wordfreq_dist)
@@ -167,7 +175,8 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
 
             log.debug("Constructed vector %s" % pprint.pformat(p))
 
-    # Split the dataset in two equal parts
+    # Je nach verwendetem Algorithmus die Vektoren
+    # normieren und den Mittelwert abziehen
     if classification_params["algorithm"] == "bayes":
         scaler = StandardScaler(with_mean=False)
     elif classification_params["algorithm"] == "naive":
@@ -180,6 +189,7 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
 
     log.debug(pprint.pformat(scaler))
 
+    # Aufteilen des Datensatzes in zwei Teile (vgl. test_size)
     X_train, X_test, y_train, y_test = train_test_split(
         array(learning_data.data), learning_data.target, test_size=0.2, random_state=0
     )
@@ -189,6 +199,8 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
     log.debug("Data used for testing:")
     log.debug(pprint.pformat(list(zip(y_test, X_test))))
 
+
+    # Standard-Parameter für die verschiedenen Algorithmen
     knear_tuned_parameters = SortedDict({
         'n_neighbors': [3, 4, 5, 6],
         'weights': ['uniform', 'distance']
@@ -206,6 +218,8 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
 
     selfmade_naive_tuned_parameters = {}
 
+
+    #Ermittlung der Scores - Testen der am besten passenden nicht vom Nutzer einstellbaren Parameter
     scores = ['precision', 'recall']
 
     for score in scores:
@@ -252,12 +266,13 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
     writeLearningDataToFile(learning_data, wordlist_fn)
 
 
-
+# Vorgehensweise im  Testmodus
 def doTesting(wordlist_fn, testing_data_files, classification_params):
     testing_data = textimport.get_urls_per_subject_from_file(testing_data_files)
     per_subject_url_and_word_freq = processTaggedUrlsWith(testing_data, addWordFreqPerUrl)
     learning_data = loadLearningDataFromFile(wordlist_fn)
 
+    # Lerndaten werden aus dem Speicher geladen, und die vorhandenen Kategorien zum Klassifizieren benutzt
     learning_data.all_learned_subjects = SortedSet(learning_data.target)
 
     log.info("Starting to classify to these categories %s" % ", ".join(learning_data.all_learned_subjects) )
@@ -267,7 +282,7 @@ def doTesting(wordlist_fn, testing_data_files, classification_params):
     all_counter = 0
     correct_counter = 0
 
-    # table title
+    # Tabellen Überschrift
     result_tab = ["&\t".join([x[:6] for x in learning_data.all_learned_subjects]) + "&\testim.&\tshould \\\\"]
 
     for subject, url_and_wordfreq_dist in per_subject_url_and_word_freq.items():

@@ -31,7 +31,7 @@ STEMMER = SnowballStemmer("english", ignore_stopwords=True)
 def cleanWordList(in_list):
     out_list = []
 
-    # 1. text_lowercase
+    # 1. Text in lowercase umwandeln
     in_list = [x.lower() for x in in_list]
 
     for word in in_list:
@@ -40,7 +40,7 @@ def cleanWordList(in_list):
             continue
 
         # 3. trenne auch am Bindestrich
-        # verwendet die split-funktion eines strings; die liefert eine Liste der Teile
+        #    verwendet die split-funktion eines strings; die liefert eine Liste der Teile
         for split_word in word.split("-"):
             if isValidWord(split_word):
                 #Stemming = Worte werden auf den Wortstamm zurückgeführt
@@ -66,8 +66,6 @@ def isValidWord(in_word):
 
 # Worten die Häufigkeit des Vorkommens zuordnen
 def wordListToFreqDict(wordlist, scale=1):
-    # for token in nltk.pos_tag(nltk.word_tokenize(sorted_text, language="english"), tagset="universal"):
-    #   pp.pprint("word: ", token)
     wordfreq = [ Fraction(wordlist.count(p), scale) for p in wordlist]
     return SortedDict(zip(wordlist, wordfreq))
 
@@ -86,25 +84,17 @@ def getFilteredTokens(INPUT_TEXT):
     raw_tokens = list(nltk.word_tokenize(INPUT_TEXT, language="english"))
     number_of_tokens = len(raw_tokens)
 
-    ## (POS-Tokenisierung
-    #posTokenizedText = nltk.pos_tag(nltk.word_tokenizeRAW_TEXT, language="english"), tagset="universal")
-    #sortedTokens = sorted(posTokenizedText, key=lambda token: token[0])
-    #pp.pprint(sortedTokens)
-    ##
     # Liste bereinigen, siehe oben
     cleaned_text = cleanWordList(raw_tokens)
-    #pp.pprint(cleanedText)
 
     # Liste alphabetisch sortieren
     sorted_text = (sorted(cleaned_text))
-    #pp.pprint(sortedText)
 
 
     return ( [w for w in sorted_text if w not in STOP_WORDS], number_of_tokens )
 
 
-#Wörterbuch mit Wortanzahl als key, Wörtern als value erstellen
-
+# Wörterbuch mit normierter Worthäufigkeit als "value" und Wörtern als "key" erstellen
 def makeWordFrequencyDictionary(INPUT_TEXT):
     # Text tokenisieren
     (TOKENIZED_TEXT, INPUT_WORD_COUNT) = getFilteredTokens(INPUT_TEXT)
@@ -173,6 +163,7 @@ def getWinningSubject(per_subject_score, classification_params):
     else:
         return winning_subjects.pop()
 
+# Erstellen der Basis
 def buildClassificationSpaceBase(per_subject_wordfreq_dict, classification_params):
     first_n_words = classification_params["category_base_length"]
 

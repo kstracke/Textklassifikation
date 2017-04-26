@@ -75,7 +75,7 @@ def load_text(path):
 def get_urls_per_subject_from_file(fn_list):
     urls_per_subject = SortedDict()
 
-    # turn a simple string into a list of string
+    # einfachen String in eine Liste von Strings umwandeln
     if isinstance(fn_list, str):
         fn_list = [ fn_list ]
 
@@ -98,10 +98,6 @@ def get_urls_per_subject_from_file(fn_list):
                     continue
 
     return urls_per_subject
-
-# TODO: Think about getting those links from ATOM feeds OR reading the while blog from ATOM feeds
-# TODO: -->  https://pypi.python.org/pypi/feedparser
-### d= feedparser.parse('URL')
 
 
 def read_textcache():
