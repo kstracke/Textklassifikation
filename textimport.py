@@ -3,7 +3,6 @@
 
 # Alles rund ums Einlesen von Text aus verschiedenen Quellen
 
-#import feedparser
 import re
 import urllib.request
 import os
