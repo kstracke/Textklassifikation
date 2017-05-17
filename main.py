@@ -33,8 +33,7 @@ class LearningData:
         self.target = []
 
 
-
-# Parameter für die Bedienung über die Konsole
+        
 def processArguments():
     classification_params = textverarbeitung.getClassificationStdParam()
 
@@ -175,6 +174,7 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
 
             log.debug("Constructed vector %s" % pprint.pformat(p))
 
+
     # Je nach verwendetem Algorithmus die Vektoren
     # normieren und den Mittelwert abziehen
     if classification_params["algorithm"] == "bayes":
@@ -217,6 +217,7 @@ def doLearning(wordlist_fn, learning_data_files, classification_params):
     })
 
     selfmade_naive_tuned_parameters = {}
+
 
 
     #Ermittlung der Scores - Testen der am besten passenden nicht vom Nutzer einstellbaren Parameter
@@ -285,6 +286,7 @@ def doTesting(wordlist_fn, testing_data_files, classification_params):
     # Tabellen Überschrift
     result_tab = ["&\t".join([x[:6] for x in learning_data.all_learned_subjects]) + "&\testim.&\tshould \\\\"]
 
+
     for subject, url_and_wordfreq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_wordfreq_dist.items():
             all_counter = all_counter + 1
@@ -342,6 +344,7 @@ def main():
 
     learning_data_fn = args.learning_data if args.learning_data else "learningdata.obj"
 
+
     if args.action == "learn":
         classification_params = textverarbeitung.getClassificationStdParam()
         classification_params["algorithm"] = args.algorithm
@@ -349,6 +352,7 @@ def main():
         classification_params["remove_shared_words"] = False if args.keep_shared_words else True
 
         doLearning(learning_data_fn, args.data, classification_params)
+
     else:
         classification_params = textverarbeitung.getClassificationStdParam()
         classification_params["min_difference_for_classification"] = args.min_diff

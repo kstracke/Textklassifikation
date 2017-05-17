@@ -132,6 +132,7 @@ class TestBuildClassificationVectorSpaceBase(unittest.TestCase):
 
         self.assertEqual(buildClassificationSpaceBase(INPUT, PARAM), OUTPUT)
 
+
     def test_remove_shared(self):
         INPUT = {'subject1': {'word1': 0.1, 'word2': 0.2},
                  'subject2': {'word2': 0.01, 'word3': 0.5},
@@ -141,7 +142,6 @@ class TestBuildClassificationVectorSpaceBase(unittest.TestCase):
         PARAM = getClassificationStdParam()
 
         self.assertEqual(buildClassificationSpaceBase(INPUT, PARAM), OUTPUT)
-
 
     def test_length_limited(self):
         MAX_N = 40

@@ -126,7 +126,6 @@ def compareWordFreqDictToLearningData(freq, learning_data, params):
         p *= N_WORDS_TOT / WORDS_PER_BASE
 
     res = learning_data.classifier.predict_proba(p.reshape(1,-1))
-    #res = learning_data.classifier.decision_function(p.reshape(1,-1))
 
     result = SortedDict({subject: score for subject, score in zip(learning_data.all_learned_subjects, res[0])})
     return result
