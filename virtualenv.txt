@@ -1,0 +1,4 @@
+virtualenv -p python3 sklearn
+source sklearn/bin/activate
+pip3 install numpy sklearn sortedcontainers bs4 breadability nltk scipy
+python3 -c 'import nltk; nltk.download()'

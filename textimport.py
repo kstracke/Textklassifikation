@@ -3,7 +3,6 @@
 
 # Alles rund ums Einlesen von Text aus verschiedenen Quellen
 
-#import feedparser
 import re
 import urllib.request
 import os
@@ -12,6 +11,8 @@ import pickle
 from bs4 import BeautifulSoup
 
 from breadability.readable import Article
+
+from sortedcontainers import SortedSet, SortedDict
 
 ##########################################################################
 # Text-Gewinnung
@@ -40,10 +41,10 @@ def load_text_from_url(url):
         con = urllib.request.urlopen(req)
         html = con.read()
 
-        # use breadability to extract the main html
+        # Nutzen von breadability, um den relevanten html-Code herauszufiltern
         filtered_html = Article(html, url=url).readable
 
-        # convert to text
+        # in Text umwandeln
         soup = BeautifulSoup(filtered_html, 'html.parser')
 
         texts = soup.find_all(text=True)
@@ -71,9 +72,9 @@ def load_text(path):
 
 
 def get_urls_per_subject_from_file(fn_list):
-    urls_per_subject = {}
+    urls_per_subject = SortedDict()
 
-    # turn a simple string into a list of string
+    # einfachen String in eine Liste von Strings umwandeln
     if isinstance(fn_list, str):
         fn_list = [ fn_list ]
 
@@ -91,15 +92,11 @@ def get_urls_per_subject_from_file(fn_list):
                     if key in urls_per_subject:
                         urls_per_subject[key].add(url)
                     else:
-                        urls_per_subject[key] = {url}
+                        urls_per_subject[key] = SortedSet({url})
                 else:
                     continue
 
     return urls_per_subject
-
-# TODO: Think about getting those links from ATOM feeds OR reading the while blog from ATOM feeds
-# TODO: -->  https://pypi.python.org/pypi/feedparser
-### d= feedparser.parse('URL')
 
 
 def read_textcache():

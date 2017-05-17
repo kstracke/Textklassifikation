@@ -9,38 +9,83 @@ import pickle
 
 import logging as log
 import argparse
+import sys
 
+from numpy import array
+
+from sortedcontainers import SortedSet, SortedDict
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report
+from sklearn.svm import SVC
+from sklearn.naive_bayes import MultinomialNB
+
+from classification import DummyScaler, SelfmadeNaive
 
 class LearningData:
-    base = set()
-    category_words = dict()
-    data = []
-    target = []
+    def __init__(self):
+        self.base = SortedSet()
+        self.category_words = SortedDict()
+        self.data = []
+        self.target = []
 
 
+        
 def processArguments():
+    classification_params = textverarbeitung.getClassificationStdParam()
+
     parser = argparse.ArgumentParser(description='Classification')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose flag')
     parser.add_argument('--debug', '-d', action='store_true', help='debug flag')
     parser.add_argument('--logfile', help="Write to this file instead of console")
-    parser.add_argument('--action', required=True, choices=['learn', 'classify', 'test'])
-    parser.add_argument('--learning-data', '-l', help='Input resp. output of learning data')
-    parser.add_argument('data', nargs='+', help=
-        'Data to process. Depending on the action (see below). For learning mode, the program expects a path to a file '
-        'with tagged urls for learning. In the classification mode, you can either specify one or more URLs directly '
-        'or a file containing text for classification. In test mode, a file like in the learning mode is used. But '
-        'instead of learning the catecories, it''s checked, if the links in the file are classified correctly.'
-    )
 
-    return parser.parse_args()
+    subparsers = parser.add_subparsers(dest="action")
+
+    parser_learn = subparsers.add_parser('learn', help='learn from the given data')
+    parser_learn.add_argument('--algorithm', default="svm", choices=["svm", "knn", "bayes", "naive"], help='classification algorithm')
+    parser_learn.add_argument('--category-base-length', type=int,
+                             default=classification_params['category_base_length'],
+                             help='Use the first N most frequent words of the category\'s word list to be part of the global base.')
+    parser_learn.add_argument('--keep-shared-words', default=False, action='store_true',
+                              help='keep words, which occur in every word list (default: remove)')
+    parser_learn.add_argument('--learning-data', '-l', help='Write learning data to this file')
+    parser_learn.add_argument('data', nargs='+', help=
+        'Data to process. The program expects a path to a file with tagged urls for learning.')
+
+
+    parser_test = subparsers.add_parser('test', help='test classification according to tagged data')
+    parser_test.add_argument('--min-diff', type=float, default=classification_params['min_difference_for_classification'],
+                             help='min_difference_for_classification')
+    parser_test.add_argument('--other-cutoff', type=float, default=classification_params['other_cutoff'],
+                             help='probability threshold to classify text as "other')
+    parser_test.add_argument('--learning-data', '-l', help='Read learning data from this file')
+    parser_test.add_argument('data', nargs='+', help=
+        'Data to process. A file like in the learning mode is used. instead of learning the catecories, it''s checked, if the links in the file are classified correctly.')
+
+    parser_test = subparsers.add_parser('classify', help='classify untagged data')
+    parser_test.add_argument('--min-diff', type=float, default=classification_params['min_difference_for_classification'],
+                             help='min_difference_for_classification')
+    parser_test.add_argument('--other-cutoff', type=float, default=classification_params['other_cutoff'],
+                             help='probability threshold to classify text as "other')
+    parser_test.add_argument('--learning-data', '-l', help='Read learning data from this file')
+    parser_test.add_argument('data', nargs='+', help=
+    'Data to process. A file containing the text to classify  or an URL is expected')
+
+    args = parser.parse_args()
+
+    if args.action == None:
+        parser.parse_args(["--help"])
+        exit()
+    return  args
 
 
 ################################################################################
-
-# Länge=Wortanzahl ausgeben
-
+# Text von Webseite herunterladen, verarbeiten
 def processTaggedUrlsWith(learning_data, merge_operation):
-    per_subject_word_freq = {}
+    per_subject_word_freq = SortedDict()
 
     for subject in learning_data:
         for url in learning_data[subject]:
@@ -52,7 +97,7 @@ def processTaggedUrlsWith(learning_data, merge_operation):
                 log.debug("Word list: %s" % pprint.pformat(freq))
 
                 per_subject_word_freq[subject] = merge_operation(
-                    per_subject_word_freq.get(subject, dict() ), url, freq )
+                    per_subject_word_freq.get(subject, SortedDict()), url, freq )
             else:
                 log.warning("ERROR: No text from %s" % url)
 
@@ -94,26 +139,33 @@ def setupLogging(args):
         log.basicConfig(level=verbosity)
 
 
-def doLearning(wordlist_fn, learning_data_files):
+# Vorgehensweise im Lernmodus
+def doLearning(wordlist_fn, learning_data_files, classification_params):
+
     per_subject_urls = textimport.get_urls_per_subject_from_file(learning_data_files)
     per_subject_url_and_word_freq = processTaggedUrlsWith(per_subject_urls, addWordFreqPerUrl)
-    per_subject_word_freq = dict()
+    per_subject_word_freq = SortedDict()
 
-    # build per subject wordfreq dictionary, keeping all the word lists in memory
+    # Erstellen eines wordfreq dictionary, alle Wortlisten werden dabei im Speicher belassen
     for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_word_freq_dist.items():
-            per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, dict()), "", wordfreq_dist)
+            per_subject_word_freq[subject] = mergeWordFreqs(per_subject_word_freq.get(subject, SortedDict()), "", wordfreq_dist)
 
-    classification_base = textverarbeitung.buildClassificationSpaceBase(per_subject_word_freq)
-    log.debug("Constructed the following base of length %i: %s" % (len(classification_base), pprint.pformat(classification_base)))
+
+    # Erstellen der Basis
+    classification_base = textverarbeitung.buildClassificationSpaceBase(per_subject_word_freq, classification_params)
+
+    constructed_base_as_text_output = "\n\t".join(classification_base)
+    log.info("Constructed the following base of length %i:\n\t%s" % (len(classification_base), constructed_base_as_text_output))
 
     learning_data = LearningData()
     learning_data.base = classification_base
-    learning_data.category_words = {subject: classification_base & set(word_freqs.keys()) for subject, word_freqs in per_subject_word_freq.items()}
+    learning_data.category_words = SortedDict({subject: classification_base & set(word_freqs.keys()) for subject, word_freqs in per_subject_word_freq.items()})
 
     log.debug("The categories have these words: %s" % pprint.pformat(learning_data.category_words))
 
-    # now that we have a base, construct the vectors for each URL
+
+    # Konstruieren der Vektoren für jede URL auf der erstelllten Basis
     for subject, url_and_word_freq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_word_freq_dist.items():
             p = textverarbeitung.getClassificationVectorSpaceElement(classification_base, wordfreq_dist)
@@ -122,35 +174,151 @@ def doLearning(wordlist_fn, learning_data_files):
 
             log.debug("Constructed vector %s" % pprint.pformat(p))
 
+
+    # Je nach verwendetem Algorithmus die Vektoren
+    # normieren und den Mittelwert abziehen
+    if classification_params["algorithm"] == "bayes":
+        scaler = StandardScaler(with_mean=False)
+    elif classification_params["algorithm"] == "naive":
+        scaler = DummyScaler()
+    else:
+        scaler = StandardScaler()
+
+    learning_data.data = scaler.fit_transform(learning_data.data)
+    learning_data.scaler = scaler
+
+    log.debug(pprint.pformat(scaler))
+
+    # Aufteilen des Datensatzes in zwei Teile (vgl. test_size)
+    X_train, X_test, y_train, y_test = train_test_split(
+        array(learning_data.data), learning_data.target, test_size=0.2, random_state=0
+    )
+
+    log.debug("Data used for training:")
+    log.debug(pprint.pformat(list(zip(y_train, X_train))))
+    log.debug("Data used for testing:")
+    log.debug(pprint.pformat(list(zip(y_test, X_test))))
+
+
+    # Standard-Parameter für die verschiedenen Algorithmen
+    knear_tuned_parameters = SortedDict({
+        'n_neighbors': [3, 4, 5, 6],
+        'weights': ['uniform', 'distance']
+    })
+
+    svm_tuned_parameters = SortedDict({
+        'kernel': ['linear', 'poly'],
+        'C': [0.1, 1, 10, 100, 1000]
+    })
+
+    naive_bayes_multinominal_tuned_parameters = SortedDict({
+        'alpha': [0.0, 0.5, 1.0, 2.0],
+        'fit_prior': [True, False]
+    })
+
+    selfmade_naive_tuned_parameters = {}
+
+
+
+    #Ermittlung der Scores - Testen der am besten passenden nicht vom Nutzer einstellbaren Parameter
+    scores = ['precision', 'recall']
+
+    for score in scores:
+        print("# Tuning hyper-parameters for %s" % score)
+        print()
+
+        if classification_params["algorithm"] == "knn":
+            clf = GridSearchCV(KNeighborsClassifier(), knear_tuned_parameters, cv=5)
+        elif classification_params["algorithm"] == "svm":
+            clf = GridSearchCV(SVC(probability=True, tol=1e-5), svm_tuned_parameters, cv=5)
+        elif classification_params["algorithm"] == "bayes":
+            clf = GridSearchCV(MultinomialNB(), naive_bayes_multinominal_tuned_parameters, cv=5)
+        elif classification_params["algorithm"] == "naive":
+            # no parameter tuning needed
+            clf = GridSearchCV(SelfmadeNaive(), selfmade_naive_tuned_parameters, cv=5)
+        else:
+            log.error("Unsupported algorithm " % classification_params["algorithm"])
+            sys.exit(1)
+        clf.fit(X_train, y_train)
+
+        print("Best parameters set found on development set:")
+        print()
+        print(clf.best_params_)
+        print()
+        print("Grid scores on development set:")
+        print()
+        means = clf.cv_results_['mean_test_score']
+        stds = clf.cv_results_['std_test_score']
+        for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+            print("%0.3f (+/-%0.03f) for %r"
+                  % (mean, std * 2, params))
+        print()
+
+        print("Detailed classification report:")
+        print()
+        print("The model is trained on the full development set.")
+        print("The scores are computed on the full evaluation set.")
+        print()
+        y_true, y_pred = y_test, clf.predict(X_test)
+        print(classification_report(y_true, y_pred))
+        print()
+        learning_data.classifier = clf.best_estimator_
+
     writeLearningDataToFile(learning_data, wordlist_fn)
 
 
-
+# Vorgehensweise im  Testmodus
 def doTesting(wordlist_fn, testing_data_files, classification_params):
     testing_data = textimport.get_urls_per_subject_from_file(testing_data_files)
     per_subject_url_and_word_freq = processTaggedUrlsWith(testing_data, addWordFreqPerUrl)
     learning_data = loadLearningDataFromFile(wordlist_fn)
 
-    all_learned_subjects = set(learning_data.target)
-    log.info("Starting to classify to these categories %s" % ", ".join(all_learned_subjects) )
+    # Lerndaten werden aus dem Speicher geladen, und die vorhandenen Kategorien zum Klassifizieren benutzt
+    learning_data.all_learned_subjects = SortedSet(learning_data.target)
+
+    log.info("Starting to classify to these categories %s" % ", ".join(learning_data.all_learned_subjects) )
+    print(learning_data.base)
+    print(learning_data.classifier)
+
+    all_counter = 0
+    correct_counter = 0
+
+    # Tabellen Überschrift
+    result_tab = ["&\t".join([x[:6] for x in learning_data.all_learned_subjects]) + "&\testim.&\tshould \\\\"]
+
 
     for subject, url_and_wordfreq_dist in per_subject_url_and_word_freq.items():
         for url, wordfreq_dist in url_and_wordfreq_dist.items():
+            all_counter = all_counter + 1
             per_subject_score = textverarbeitung.compareWordFreqDictToLearningData(
                 wordfreq_dist, learning_data, classification_params)
             classified_to = textverarbeitung.getWinningSubject(per_subject_score, classification_params)
 
+            row = [("%.3f" % x) for x in per_subject_score.values()]
             if classified_to == subject:
                 log.info("%s correctly classified to %s" % (url, classified_to))
-            elif classified_to == None:
-                if subject not in all_learned_subjects:
+                row.append(classified_to[:6])
+                row.append(subject[:6])
+                correct_counter = correct_counter + 1
+            elif classified_to is None:
+                row.append("other")
+                if subject not in learning_data.all_learned_subjects:
                     log.info("%s correctly classified to other" % url)
+                    correct_counter = correct_counter + 1
+                    row.append("other")
                 else:
                     log.warning("%s incorrectly classified to other, should be %s" % (url, subject))
                     log.warning("Scores were: %s" % pprint.pformat(per_subject_score))
+                    row.append(subject[:6])
             elif classified_to != subject:
                 log.warning("%s incorrectly classified to %s." % (url, classified_to))
                 log.warning("Scores were: %s" % pprint.pformat(per_subject_score))
+                row.append(classified_to[:6])
+                row.append("other" if subject not in learning_data.all_learned_subjects else subject[:6])
+
+            result_tab.append("&\t".join(row))
+    log.info("Tabular result:\n" + " \\\\\n".join(result_tab) + " \\\\\n")
+    log.info("Correct classified: %f %%" % (correct_counter*100.0 / all_counter))
 
 
 def doClassification(wordlist_fn, classification_data_paths, classification_params):
@@ -175,11 +343,20 @@ def main():
     setupLogging(args)
 
     learning_data_fn = args.learning_data if args.learning_data else "learningdata.obj"
+
+
     if args.action == "learn":
-        doLearning(learning_data_fn, args.data)
+        classification_params = textverarbeitung.getClassificationStdParam()
+        classification_params["algorithm"] = args.algorithm
+        classification_params["category_base_length"] = args.category_base_length
+        classification_params["remove_shared_words"] = False if args.keep_shared_words else True
+
+        doLearning(learning_data_fn, args.data, classification_params)
+
     else:
         classification_params = textverarbeitung.getClassificationStdParam()
-        classification_params["min_difference_for_classication"] = 0.2
+        classification_params["min_difference_for_classification"] = args.min_diff
+        classification_params["other_cutoff"] = args.other_cutoff
 
         if args.action == "classify":
             doClassification(learning_data_fn, args.data, classification_params)
